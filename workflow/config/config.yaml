@@ -1,0 +1,17 @@
+paths:
+  raw: data/raw
+  intermediate: data/intermediate
+  results: data/results
+  reports: reports
+  logs: logs
+  containers: app_containers
+
+policy:
+  no_sudo: true
+  protect_raw_fastq: true
+  workflow_manager: snakemake
+  helper_environment_manager: mamba
+  bioinformatics_runtime: apptainer
+
+containers: {}
+samples: {}

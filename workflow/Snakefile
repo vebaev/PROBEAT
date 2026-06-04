@@ -1,0 +1,39 @@
+configfile: "workflow/config/config.yaml"
+
+from pathlib import Path
+
+
+RESULTS_SENTINEL = "data/results/workflow_initialized.txt"
+REPORT_SENTINEL = "reports/workflow_initialized.txt"
+
+
+rule all:
+    input:
+        RESULTS_SENTINEL,
+        REPORT_SENTINEL
+
+
+rule initialize_workspace:
+    output:
+        results=RESULTS_SENTINEL,
+        report=REPORT_SENTINEL
+    log:
+        "logs/initialize_workspace.log"
+    shell:
+        r"""
+        set -euo pipefail
+        {
+            echo "Workspace initialized by Snakemake"
+            echo "Raw data directory: {config[paths][raw]}"
+            echo "Intermediate directory: {config[paths][intermediate]}"
+            echo "Results directory: {config[paths][results]}"
+            echo "Reports directory: {config[paths][reports]}"
+            echo "Containers directory: {config[paths][containers]}"
+        } > {output.results}
+
+        {
+            echo "Snakemake workflow is ready."
+            echo "Add analysis rules to workflow/Snakefile or included workflow modules."
+            echo "Bioinformatics applications must run through Apptainer containers."
+        } > {output.report}
+        """

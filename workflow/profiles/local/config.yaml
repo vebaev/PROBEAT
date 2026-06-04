@@ -1,0 +1,13 @@
+snakefile: workflow/Snakefile
+cores: 1
+printshellcmds: true
+show-failed-logs: true
+keep-going: false
+rerun-incomplete: true
+latency-wait: 30
+use-conda: false
+use-apptainer: true
+apptainer-args: "--cleanenv --bind /home/vebaev/codex:/home/vebaev/codex"
+default-resources:
+  - mem_mb=4000
+  - runtime=60

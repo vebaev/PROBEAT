@@ -1,0 +1,25 @@
+# Raw data are intentionally not versioned.
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/README.md
+
+# Generated analysis outputs.
+data/intermediate/*
+!data/intermediate/.gitkeep
+data/results/*
+!data/results/.gitkeep
+logs/*
+!logs/.gitkeep
+reports/*
+!reports/.gitkeep
+
+# Local containers can be large and should be rebuilt or documented.
+app_containers/*.sif
+
+# Snakemake runtime state.
+.snakemake/
+
+# Python/editor noise.
+__pycache__/
+*.py[cod]
+.DS_Store
