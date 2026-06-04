@@ -52,3 +52,5 @@ Recommended planning target: reserve at least 250-300 GB for databases and 50-10
 | BAGEL4 | no configured public CLI container/DB | unknown | manual |
 
 If Bakta light is acceptable, a practical database budget is about 140-170 GB. If Bakta full is used, plan for about 230-270 GB before analysis outputs.
+
+The selected plan is Bakta light. See `workflow/docs/database_install_plan_bakta_light.md`.
