@@ -1,0 +1,13 @@
+name	image	uri	status
+fastp	app_containers/fastp_1.3.3.sif	docker://quay.io/biocontainers/fastp:1.3.3--h43da1c4_0	required
+fastqc	app_containers/fastqc_0.12.1.sif	docker://quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0	required
+unicycler	app_containers/unicycler_0.5.1.sif	docker://quay.io/biocontainers/unicycler:0.5.1--py312hdcc493e_5	required
+quast	app_containers/quast_5.3.0.sif	docker://quay.io/biocontainers/quast:5.3.0--py313pl5321h5ca1c30_2	required
+checkm2	app_containers/checkm2_1.1.0.sif	docker://quay.io/biocontainers/checkm2:1.1.0--pyh7e72e81_1	required_db
+gtdbtk	app_containers/gtdbtk_2.7.2.sif	docker://quay.io/biocontainers/gtdbtk:2.7.2--pyhdfd78af_0	required_db
+bakta	app_containers/bakta_1.12.0.sif	docker://quay.io/biocontainers/bakta:1.12.0--pyhdfd78af_0	required_db
+amrfinderplus	app_containers/ncbi-amrfinderplus_4.2.7.sif	docker://quay.io/biocontainers/ncbi-amrfinderplus:4.2.7--hf69ffd2_0	required_db
+antismash	app_containers/antismash_8.0.4.sif	docker://quay.io/biocontainers/antismash:8.0.4--pyhdfd78af_1	required_db
+mobsuite	app_containers/mob_suite_3.1.9.sif	docker://quay.io/biocontainers/mob_suite:3.1.9--pyhdfd78af_1	required_db
+multiqc	app_containers/multiqc_1.35.sif	docker://quay.io/biocontainers/multiqc:1.35--pyhdfd78af_1	required
+bagel4	app_containers/bagel4.manual.sif	manual	BAGEL4 has no configured public Biocontainers image

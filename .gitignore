@@ -6,6 +6,8 @@ data/raw/*
 # Generated analysis outputs.
 data/intermediate/*
 !data/intermediate/.gitkeep
+data/databases/*
+!data/databases/README.md
 data/results/*
 !data/results/.gitkeep
 logs/*
@@ -15,6 +17,7 @@ reports/*
 
 # Local containers can be large and should be rebuilt or documented.
 app_containers/*.sif
+app_containers/*.sandbox/
 
 # Snakemake runtime state.
 .snakemake/

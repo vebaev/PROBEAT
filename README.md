@@ -44,3 +44,29 @@ The local helper environment is expected at:
 ```
 
 It contains Snakemake, Mamba, Apptainer, Git, Python, and helper libraries only.
+
+## Bacterial Genome Workflow
+
+Add Illumina samples to:
+
+```bash
+workflow/config/samples.tsv
+```
+
+Format:
+
+```text
+sample	layout	r1	r2
+sample_a	PE	data/raw/sample_a_R1.fastq.gz	data/raw/sample_a_R2.fastq.gz
+sample_b	SE	data/raw/sample_b.fastq.gz	
+```
+
+Then run:
+
+```bash
+workflow/run_snakemake.sh
+```
+
+The workflow includes fastp, FastQC, Unicycler, QUAST, CheckM2, GTDB-Tk, Bakta, AMRFinderPlus, BAGEL4 placeholder, antiSMASH, MOB-suite, MultiQC, and final HTML/PDF reports.
+
+Database-dependent tools expect databases under `data/databases/`; see `data/databases/README.md`.

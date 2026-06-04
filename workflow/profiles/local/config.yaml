@@ -7,7 +7,7 @@ rerun-incomplete: true
 latency-wait: 30
 use-conda: false
 use-apptainer: true
-apptainer-args: "--cleanenv --bind /home/vebaev/codex:/home/vebaev/codex"
+apptainer-args: "--cleanenv --unsquash --bind /home/vebaev/codex:/home/vebaev/codex"
 default-resources:
   - mem_mb=4000
   - runtime=60

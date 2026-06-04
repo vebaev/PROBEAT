@@ -5,6 +5,7 @@ workspace="/home/vebaev/codex"
 helper_env="$workspace/mamba_envs/snakemake-helper-2026-06-04"
 cd "$workspace"
 
+export PATH="$helper_env/bin:$PATH"
 export XDG_CACHE_HOME="$workspace/.cache"
 export APPTAINER_CACHEDIR="$workspace/.cache/apptainer"
 export APPTAINER_TMPDIR="$workspace/.cache/apptainer-tmp"

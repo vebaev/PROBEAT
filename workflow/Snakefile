@@ -1,22 +1,94 @@
 configfile: "workflow/config/config.yaml"
 
+import csv
 from pathlib import Path
 
 
-RESULTS_SENTINEL = "data/results/workflow_initialized.txt"
-REPORT_SENTINEL = "reports/workflow_initialized.txt"
+def load_samples(samples_file):
+    path = Path(samples_file)
+    if not path.exists():
+        return {}
+    with path.open(newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    samples = {}
+    for row in rows:
+        sample = row["sample"].strip()
+        if not sample:
+            continue
+        layout = row["layout"].strip().upper()
+        if layout not in {"PE", "SE"}:
+            raise ValueError(f"Sample {sample} has unsupported layout: {layout}")
+        if not row["r1"].strip():
+            raise ValueError(f"Sample {sample} is missing r1")
+        if layout == "PE" and not row["r2"].strip():
+            raise ValueError(f"Sample {sample} is PE but missing r2")
+        samples[sample] = {"layout": layout, "r1": row["r1"].strip(), "r2": row["r2"].strip()}
+    return samples
+
+
+SAMPLES = load_samples(config["samples_file"])
+SAMPLE_NAMES = sorted(SAMPLES)
+
+
+def container(name):
+    return config["containers"][name]
+
+
+def db(name):
+    return config["databases"][name]
+
+
+def assembly_for_sample(sample):
+    return f"data/results/assemblies/{sample}/assembly.fasta"
+
+
+def assembly(wildcards):
+    return assembly_for_sample(wildcards.sample)
+
+
+def trimmed_done(sample):
+    return f"data/intermediate/trimmed/{sample}.done"
+
+
+def fastqc_targets():
+    targets = []
+    for sample, meta in SAMPLES.items():
+        targets.append(f"data/results/qc/fastqc/{sample}_R1_fastqc.html")
+        if meta["layout"] == "PE":
+            targets.append(f"data/results/qc/fastqc/{sample}_R2_fastqc.html")
+    return targets
+
+
+def workflow_targets():
+    if not SAMPLE_NAMES:
+        return ["data/results/workflow_initialized.txt", "reports/workflow_initialized.txt"]
+    targets = []
+    targets += fastqc_targets()
+    targets += [assembly_for_sample(s) for s in SAMPLE_NAMES]
+    targets += [f"data/results/quast/{s}/report.tsv" for s in SAMPLE_NAMES]
+    targets += [f"data/results/checkm2/{s}/quality_report.tsv" for s in SAMPLE_NAMES]
+    targets += [f"data/results/gtdbtk/{s}/gtdbtk.bac120.summary.tsv" for s in SAMPLE_NAMES]
+    targets += [f"data/results/bakta/{s}/{s}.gff3" for s in SAMPLE_NAMES]
+    targets += [f"data/results/amrfinder/{s}.tsv" for s in SAMPLE_NAMES]
+    targets += [f"data/results/bagel4/{s}/bagel4.done" for s in SAMPLE_NAMES]
+    targets += [f"data/results/antismash/{s}/index.html" for s in SAMPLE_NAMES]
+    targets += [f"data/results/mobsuite/{s}/mobtyper_results.txt" for s in SAMPLE_NAMES]
+    return targets
+
+
+ANALYSIS_TARGETS = workflow_targets()
+FINAL_TARGETS = ANALYSIS_TARGETS + ["data/results/multiqc/multiqc_report.html", "reports/bacterial_genome_report.html", "reports/bacterial_genome_report.pdf"] if SAMPLE_NAMES else ANALYSIS_TARGETS
 
 
 rule all:
     input:
-        RESULTS_SENTINEL,
-        REPORT_SENTINEL
+        FINAL_TARGETS
 
 
 rule initialize_workspace:
     output:
-        results=RESULTS_SENTINEL,
-        report=REPORT_SENTINEL
+        results="data/results/workflow_initialized.txt",
+        report="reports/workflow_initialized.txt"
     log:
         "logs/initialize_workspace.log"
     shell:
@@ -32,8 +104,329 @@ rule initialize_workspace:
         }} > {output.results}
 
         {{
-            echo "Snakemake workflow is ready."
-            echo "Add analysis rules to workflow/Snakefile or included workflow modules."
-            echo "Bioinformatics applications must run through Apptainer containers."
+            echo "Add samples to workflow/config/samples.tsv."
+            echo "Bioinformatics applications run through Apptainer containers."
         }} > {output.report}
         """
+
+
+rule fastp_pe:
+    input:
+        r1=lambda wc: SAMPLES[wc.sample]["r1"],
+        r2=lambda wc: SAMPLES[wc.sample]["r2"]
+    output:
+        r1="data/intermediate/trimmed/{sample}_R1.fastq.gz",
+        r2="data/intermediate/trimmed/{sample}_R2.fastq.gz",
+        html="data/results/qc/fastp/{sample}.html",
+        json="data/results/qc/fastp/{sample}.json",
+        done="data/intermediate/trimmed/{sample}.done"
+    log:
+        "logs/trimmed/fastp_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=12000
+    container:
+        container("fastp")
+    params:
+        layout=lambda wc: SAMPLES[wc.sample]["layout"]
+    shell:
+        r"""
+        test "{params.layout}" = "PE"
+        fastp --thread {threads} --in1 {input.r1} --in2 {input.r2} --out1 {output.r1} --out2 {output.r2} --html {output.html} --json {output.json} > {log} 2>&1
+        touch {output.done}
+        """
+
+
+rule fastp_se:
+    input:
+        r1=lambda wc: SAMPLES[wc.sample]["r1"]
+    output:
+        r1="data/intermediate/trimmed/{sample}_SE.fastq.gz",
+        html="data/results/qc/fastp/{sample}.html",
+        json="data/results/qc/fastp/{sample}.json",
+        done="data/intermediate/trimmed/{sample}.done"
+    log:
+        "logs/trimmed/fastp_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=8000
+    container:
+        container("fastp")
+    params:
+        layout=lambda wc: SAMPLES[wc.sample]["layout"]
+    shell:
+        r"""
+        test "{params.layout}" = "SE"
+        fastp --thread {threads} --in1 {input.r1} --out1 {output.r1} --html {output.html} --json {output.json} > {log} 2>&1
+        touch {output.done}
+        """
+
+
+rule fastqc_r1:
+    input:
+        lambda wc: SAMPLES[wc.sample]["r1"]
+    output:
+        html="data/results/qc/fastqc/{sample}_R1_fastqc.html",
+        zip="data/results/qc/fastqc/{sample}_R1_fastqc.zip"
+    log:
+        "logs/qc/fastqc_{sample}_R1.log"
+    threads: 2
+    resources:
+        mem_mb=4000
+    container:
+        container("fastqc")
+    shell:
+        r"""
+        mkdir -p data/intermediate/fastqc_inputs data/results/qc/fastqc
+        ln -sf "$(realpath {input})" data/intermediate/fastqc_inputs/{wildcards.sample}_R1.fastq.gz
+        fastqc --threads {threads} --outdir data/results/qc/fastqc data/intermediate/fastqc_inputs/{wildcards.sample}_R1.fastq.gz > {log} 2>&1
+        """
+
+
+rule fastqc_r2:
+    input:
+        lambda wc: SAMPLES[wc.sample]["r2"]
+    output:
+        html="data/results/qc/fastqc/{sample}_R2_fastqc.html",
+        zip="data/results/qc/fastqc/{sample}_R2_fastqc.zip"
+    log:
+        "logs/qc/fastqc_{sample}_R2.log"
+    threads: 2
+    resources:
+        mem_mb=4000
+    container:
+        container("fastqc")
+    params:
+        layout=lambda wc: SAMPLES[wc.sample]["layout"]
+    shell:
+        r"""
+        test "{params.layout}" = "PE"
+        mkdir -p data/intermediate/fastqc_inputs data/results/qc/fastqc
+        ln -sf "$(realpath {input})" data/intermediate/fastqc_inputs/{wildcards.sample}_R2.fastq.gz
+        fastqc --threads {threads} --outdir data/results/qc/fastqc data/intermediate/fastqc_inputs/{wildcards.sample}_R2.fastq.gz > {log} 2>&1
+        """
+
+
+def unicycler_inputs(wildcards):
+    if SAMPLES[wildcards.sample]["layout"] == "PE":
+        return {
+            "r1": f"data/intermediate/trimmed/{wildcards.sample}_R1.fastq.gz",
+            "r2": f"data/intermediate/trimmed/{wildcards.sample}_R2.fastq.gz",
+        }
+    return {"r1": f"data/intermediate/trimmed/{wildcards.sample}_SE.fastq.gz"}
+
+
+rule unicycler:
+    input:
+        unpack(unicycler_inputs)
+    output:
+        assembly="data/results/assemblies/{sample}/assembly.fasta"
+    log:
+        "logs/assemblies/unicycler_{sample}.log"
+    threads: 16
+    resources:
+        mem_mb=64000
+    container:
+        container("unicycler")
+    params:
+        reads=lambda wc: (
+            f"-1 data/intermediate/trimmed/{wc.sample}_R1.fastq.gz -2 data/intermediate/trimmed/{wc.sample}_R2.fastq.gz"
+            if SAMPLES[wc.sample]["layout"] == "PE"
+            else f"-s data/intermediate/trimmed/{wc.sample}_SE.fastq.gz"
+        )
+    shell:
+        "unicycler {params.reads} -o data/results/assemblies/{wildcards.sample} -t {threads} > {log} 2>&1"
+
+
+rule quast:
+    input:
+        assembly=assembly
+    output:
+        report="data/results/quast/{sample}/report.tsv"
+    log:
+        "logs/quast/quast_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=16000
+    container:
+        container("quast")
+    shell:
+        "quast.py --threads {threads} --min-contig {config[params][min_contig_length]} -o data/results/quast/{wildcards.sample} {input.assembly} > {log} 2>&1"
+
+
+rule checkm2:
+    input:
+        assembly=assembly
+    output:
+        report="data/results/checkm2/{sample}/quality_report.tsv"
+    log:
+        "logs/checkm2/checkm2_{sample}.log"
+    threads: 16
+    resources:
+        mem_mb=64000
+    container:
+        container("checkm2")
+    params:
+        database=lambda wc: db("checkm2")
+    shell:
+        r"""
+        test -d "{params.database}" || (echo "Missing CheckM2 database: {params.database}" >&2; exit 2)
+        checkm2 predict --threads {threads} --database_path {params.database} --input {input.assembly} --output-directory data/results/checkm2/{wildcards.sample} > {log} 2>&1
+        """
+
+
+rule gtdbtk:
+    input:
+        assembly=assembly
+    output:
+        summary="data/results/gtdbtk/{sample}/gtdbtk.bac120.summary.tsv"
+    log:
+        "logs/gtdbtk/gtdbtk_{sample}.log"
+    threads: 24
+    resources:
+        mem_mb=96000
+    container:
+        container("gtdbtk")
+    params:
+        database=lambda wc: db("gtdbtk")
+    shell:
+        r"""
+        test -d "{params.database}" || (echo "Missing GTDB-Tk database: {params.database}" >&2; exit 2)
+        export GTDBTK_DATA_PATH="{params.database}"
+        mkdir -p data/intermediate/gtdbtk/{wildcards.sample}
+        cp {input.assembly} data/intermediate/gtdbtk/{wildcards.sample}/{wildcards.sample}.fna
+        gtdbtk classify_wf --genome_dir data/intermediate/gtdbtk/{wildcards.sample} --out_dir data/results/gtdbtk/{wildcards.sample} --extension fna --cpus {threads} > {log} 2>&1
+        """
+
+
+rule bakta:
+    input:
+        assembly=assembly
+    output:
+        gff="data/results/bakta/{sample}/{sample}.gff3"
+    log:
+        "logs/bakta/bakta_{sample}.log"
+    threads: 16
+    resources:
+        mem_mb=64000
+    container:
+        container("bakta")
+    params:
+        database=lambda wc: db("bakta")
+    shell:
+        r"""
+        test -d "{params.database}" || (echo "Missing Bakta database: {params.database}" >&2; exit 2)
+        bakta --db {params.database} --threads {threads} --genus "Bacteria" --prefix {wildcards.sample} --output data/results/bakta/{wildcards.sample} {input.assembly} > {log} 2>&1
+        """
+
+
+rule amrfinderplus:
+    input:
+        assembly=assembly
+    output:
+        tsv="data/results/amrfinder/{sample}.tsv"
+    log:
+        "logs/amrfinder/amrfinder_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=16000
+    container:
+        container("amrfinderplus")
+    params:
+        database=lambda wc: db("amrfinderplus")
+    shell:
+        r"""
+        test -d "{params.database}" || (echo "Missing AMRFinderPlus database: {params.database}" >&2; exit 2)
+        amrfinder --nucleotide {input.assembly} --threads {threads} --database {params.database} --output {output.tsv} > {log} 2>&1
+        """
+
+
+rule bagel4:
+    input:
+        assembly=assembly
+    output:
+        done="data/results/bagel4/{sample}/bagel4.done"
+    log:
+        "logs/bagel4/bagel4_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=16000
+    params:
+        run=lambda wc: str(config["params"]["run_bagel4"]).lower(),
+        image=lambda wc: container("bagel4")
+    shell:
+        r"""
+        mkdir -p data/results/bagel4/{wildcards.sample}
+        if [ "{params.run}" != "true" ]; then
+            echo "BAGEL4 skipped. Configure app_containers/bagel4.manual.sif and set params.run_bagel4=true." > {log}
+            touch {output.done}
+            exit 0
+        fi
+        test -s "{params.image}" || (echo "Missing BAGEL4 container: {params.image}" >&2; exit 2)
+        apptainer exec --cleanenv --unsquash --bind /home/vebaev/codex:/home/vebaev/codex {params.image} bagel4 -i {input.assembly} -o data/results/bagel4/{wildcards.sample} -t {threads} > {log} 2>&1
+        touch {output.done}
+        """
+
+
+rule antismash:
+    input:
+        assembly=assembly
+    output:
+        html="data/results/antismash/{sample}/index.html"
+    log:
+        "logs/antismash/antismash_{sample}.log"
+    threads: 16
+    resources:
+        mem_mb=64000
+    container:
+        container("antismash")
+    shell:
+        r"""
+        antismash --taxon bacteria --cpus {threads} --output-dir data/results/antismash/{wildcards.sample} {input.assembly} > {log} 2>&1
+        """
+
+
+rule mobsuite:
+    input:
+        assembly=assembly
+    output:
+        report="data/results/mobsuite/{sample}/mobtyper_results.txt"
+    log:
+        "logs/mobsuite/mobtyper_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=32000
+    container:
+        container("mobsuite")
+    shell:
+        r"""
+        mob_typer --infile {input.assembly} --outdir data/results/mobsuite/{wildcards.sample} --num_threads {threads} > {log} 2>&1
+        """
+
+
+rule multiqc:
+    input:
+        ANALYSIS_TARGETS
+    output:
+        html="data/results/multiqc/multiqc_report.html"
+    log:
+        "logs/multiqc/multiqc.log"
+    threads: 2
+    resources:
+        mem_mb=8000
+    container:
+        container("multiqc")
+    shell:
+        "multiqc data/results logs --outdir data/results/multiqc --filename multiqc_report.html > {log} 2>&1"
+
+
+rule final_report:
+    input:
+        multiqc="data/results/multiqc/multiqc_report.html"
+    output:
+        html="reports/bacterial_genome_report.html",
+        pdf="reports/bacterial_genome_report.pdf"
+    log:
+        "logs/report/final_report.log"
+    shell:
+        "/home/vebaev/codex/mamba_envs/snakemake-helper-2026-06-04/bin/python workflow/scripts/render_report.py workflow/config/config.yaml {config[samples_file]} {output.html} {output.pdf} > {log} 2>&1"

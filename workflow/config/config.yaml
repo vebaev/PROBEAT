@@ -5,6 +5,9 @@ paths:
   reports: reports
   logs: logs
   containers: app_containers
+  databases: data/databases
+
+samples_file: workflow/config/samples.tsv
 
 policy:
   no_sudo: true
@@ -13,5 +16,33 @@ policy:
   helper_environment_manager: mamba
   bioinformatics_runtime: apptainer
 
-containers: {}
-samples: {}
+containers:
+  fastp: app_containers/fastp_1.3.3.sif
+  fastqc: app_containers/fastqc_0.12.1.sif
+  unicycler: app_containers/unicycler_0.5.1.sif
+  quast: app_containers/quast_5.3.0.sif
+  checkm2: app_containers/checkm2_1.1.0.sif
+  gtdbtk: app_containers/gtdbtk_2.7.2.sif
+  bakta: app_containers/bakta_1.12.0.sif
+  amrfinderplus: app_containers/ncbi-amrfinderplus_4.2.7.sif
+  bagel4: app_containers/bagel4.manual.sif
+  antismash: app_containers/antismash_8.0.4.sif
+  mobsuite: app_containers/mob_suite_3.1.9.sif
+  multiqc: app_containers/multiqc_1.35.sif
+
+databases:
+  checkm2: data/databases/checkm2
+  gtdbtk: data/databases/gtdbtk
+  bakta: data/databases/bakta
+  amrfinderplus: data/databases/amrfinderplus
+  antismash: data/databases/antismash
+  bagel4: data/databases/bagel4
+  mobsuite: data/databases/mob_suite
+
+params:
+  run_optional_db_steps: true
+  run_bagel4: false
+  min_contig_length: 500
+  genetic_code: 11
+  organism: Bacteria
+  report_title: Bacterial Genome Analysis Report
