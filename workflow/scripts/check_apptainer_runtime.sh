@@ -10,4 +10,9 @@ if [[ ! -s "$image" ]]; then
     exit 2
 fi
 
+if [[ ! -e /dev/fuse ]]; then
+    echo "Missing /dev/fuse. Apptainer cannot execute these containers on this server without FUSE or system Apptainer support." >&2
+    exit 3
+fi
+
 "$apptainer" exec --cleanenv --bind "$workspace:$workspace" "$image" fastp --version

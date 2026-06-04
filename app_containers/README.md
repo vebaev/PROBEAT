@@ -18,10 +18,10 @@ BAGEL4 is marked as manual because no public Biocontainers image is configured h
 
 ## Server runtime note
 
-On this server, Apptainer image execution currently fails because FUSE is unavailable:
+On this server, Apptainer image execution currently fails because `/dev/fuse` is unavailable to the current user:
 
 ```text
 fuse: device not found, try 'modprobe fuse' first
 ```
 
-The containers have been pulled successfully, but running them requires a working Apptainer runtime with FUSE or a setuid/system Apptainer configuration. Do not use `sudo` from this workspace to change that.
+The containers have been pulled successfully, but running them requires a working Apptainer runtime with FUSE or a setuid/system Apptainer configuration. Do not use `sudo` from this workspace to change that. See `reports/server_runtime_and_storage_plan.md`.
