@@ -22,18 +22,18 @@ rule initialize_workspace:
     shell:
         r"""
         set -euo pipefail
-        {
+        {{
             echo "Workspace initialized by Snakemake"
             echo "Raw data directory: {config[paths][raw]}"
             echo "Intermediate directory: {config[paths][intermediate]}"
             echo "Results directory: {config[paths][results]}"
             echo "Reports directory: {config[paths][reports]}"
             echo "Containers directory: {config[paths][containers]}"
-        } > {output.results}
+        }} > {output.results}
 
-        {
+        {{
             echo "Snakemake workflow is ready."
             echo "Add analysis rules to workflow/Snakefile or included workflow modules."
             echo "Bioinformatics applications must run through Apptainer containers."
-        } > {output.report}
+        }} > {output.report}
         """

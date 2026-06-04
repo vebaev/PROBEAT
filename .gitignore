@@ -18,6 +18,15 @@ app_containers/*.sif
 
 # Snakemake runtime state.
 .snakemake/
+.tmp/
+
+# Local package managers, caches, and environments.
+.cache/
+downloads/
+mamba_envs/
+mamba_pkgs/
+micromamba-root/
+tools/
 
 # Python/editor noise.
 __pycache__/

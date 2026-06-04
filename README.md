@@ -32,7 +32,15 @@ This workspace is organized for reproducible data analysis with Snakemake as the
 Create or activate a dedicated Mamba environment for Snakemake, then run:
 
 ```bash
-snakemake --snakefile workflow/Snakefile --profile workflow/profiles/local
+workflow/run_snakemake.sh
 ```
 
 Bioinformatics tools should be called from Apptainer containers inside Snakemake rules.
+
+The local helper environment is expected at:
+
+```bash
+/home/vebaev/codex/mamba_envs/snakemake-helper-2026-06-04
+```
+
+It contains Snakemake, Mamba, Apptainer, Git, Python, and helper libraries only.
