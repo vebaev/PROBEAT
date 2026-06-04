@@ -1,5 +1,5 @@
 snakefile: workflow/Snakefile
-cores: 1
+cores: 48
 printshellcmds: true
 show-failed-logs: true
 keep-going: false
@@ -12,3 +12,5 @@ default-resources:
   - mem_mb=4000
   - runtime=60
   - tmpdir="/home/vebaev/codex/.tmp"
+resources:
+  - mem_mb=178000
