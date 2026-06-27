@@ -1,5 +1,9 @@
 # PROBEAT
 
+<p align="center">
+  <img src="data/probeat_logo2.png" alt="PROBEAT logo" width="360">
+</p>
+
 PROBEAT (PRObiotic Bacterial gEnome Analysis Toolkit) is a Dockerized
 Snakemake workflow for bacterial isolate genome analysis with a probiotic
 interpretation layer, Streamlit web UI, Redis worker, and HTML/PDF reporting.
@@ -7,6 +11,28 @@ interpretation layer, Streamlit web UI, Redis worker, and HTML/PDF reporting.
 This repository documents the **full** Docker profile only. The full profile
 builds the complete runtime image for Illumina PE/SE, Oxford Nanopore ONT, and
 HYBRID analyses.
+
+<p align="center">
+  <img src="data/workflow.png" alt="PROBEAT workflow" width="780">
+</p>
+
+<p align="center">
+  <img src="data/screen_analysis.png" alt="PROBEAT new analysis screen" width="780">
+</p>
+
+<p align="center">
+  <img src="data/screen_dashboard.png" alt="PROBEAT dashboard screen" width="780">
+</p>
+
+## Workflow Programs
+
+PROBEAT combines FastQC, fastp, Rasusa, Unicycler, Flye, Medaka, QUAST, Mash,
+sourmash, BUSCO, Bakta, AMRFinderPlus, ABRicate, KofamScan, KEGGDecoder,
+dbCAN, eggNOG-mapper, antiSMASH, gutSMASH, BAGEL4, geNomad, GenomeSPOT,
+FastANI, MOB-suite, GOProbioticProfiler, pyCirclize, and custom reporting
+scripts to cover QC, assembly, taxonomy, annotation, safety, mobile elements,
+functional potential, probiotic markers, comparative genomics, genome maps,
+and final HTML/PDF reports.
 
 ## Requirements
 
@@ -78,14 +104,6 @@ Run the full runtime doctor:
 docker-compose run --rm worker ./probeat doctor --profile full --strict
 ```
 
-Run the gutSMASH runtime self-test:
-
-```bash
-docker-compose run --rm worker \
-  /app/mamba_envs/snakemake-conda-helper-2026-06-04/bin/python \
-  /app/workflow/scripts/run_gutsmash_wrapper.py --self-test
-```
-
 Run a Snakemake dry-run with the bundled smoke FASTQ:
 
 ```bash
@@ -105,43 +123,6 @@ The default `.env.example` keeps runtime data under `./storage`:
 - `./storage/state`: job state files
 
 These directories are intentionally ignored by Git.
-
-## Running Samples
-
-Use the Streamlit UI for routine operation. For command-line runs inside the
-worker container:
-
-```bash
-docker-compose run --rm worker \
-  workflow/run_sample.sh SAMPLE PE /app/data/uploads/SAMPLE_R1.fastq.gz /app/data/uploads/SAMPLE_R2.fastq.gz --cores 16
-
-docker-compose run --rm worker \
-  workflow/run_sample.sh SAMPLE SE /app/data/uploads/SAMPLE.fastq.gz --cores 16
-
-docker-compose run --rm worker \
-  workflow/run_sample.sh SAMPLE ONT /app/data/uploads/SAMPLE.fastq.gz --cores 16
-```
-
-Results are written to:
-
-```text
-storage/results/<sample>/
-```
-
-The final report is written to:
-
-```text
-storage/results/<sample>/report/<sample>_report.html
-storage/results/<sample>/report/<sample>_report.pdf
-```
-
-## Stop Services
-
-```bash
-docker-compose down
-```
-
-This stops the services but keeps `./storage` data.
 
 ## Troubleshooting
 
@@ -175,13 +156,6 @@ If a workflow step fails, inspect:
 storage/results/<sample>/run/probeat.log
 storage/logs/
 ```
-
-## Repository Hygiene
-
-Do not commit runtime data, downloaded databases, FASTQ/SRA inputs, Docker
-caches, Mamba environments, generated reports, or local agent handoff files.
-The repository is intended to contain source, configuration, tests, and
-documentation only.
 
 ## License
 
