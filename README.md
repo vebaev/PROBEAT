@@ -39,11 +39,28 @@ and final HTML/PDF reports.
 - Docker Engine with Docker Compose (`docker-compose`)
 - Internet access for the first image build and database download
 - Sufficient disk space for the full image, workflow outputs, and downloaded
-  biological databases
+  biological databases (the workflow requires about 200 GB of disk space)
 - Linux server or workstation recommended for production runs
 
 The databases are not stored in Git and are not baked into the image. They are
 downloaded into `./storage/databases` by the `database-init` Compose service.
+
+Largest database groups:
+
+- `bakta_full`: `84G`
+- `eggnog`: `59G`
+- `antismash`: `9.4G`
+- `dbcan_v5`: `7.4G`
+- `kofam`: `7.2G`
+- `gutsmash`: `3.8G`
+
+Medium-sized database groups:
+
+- `mob_suite`: `2.9G`
+- `sourmash`: `2.9G`
+- `dbcan`: `2.3G`
+- `fastani_ncbi`: `1.8G`
+- `genomad`: `1.4G`
 
 ## Quickstart
 
