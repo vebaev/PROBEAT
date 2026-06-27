@@ -1,0 +1,16 @@
+--- a/antismash/common/subprocessing/diamond.py
++++ b/antismash/common/subprocessing/diamond.py
+@@ -30,10 +30,12 @@
+         params = [
+             config.executables.diamond,
+             subcommand,
+-            "--threads", str(config.cpus),
+-            "--tmpdir", temp_dir,
+         ]
+
++        if subcommand not in ("version", "makedb"):
++            params.extend(["--threads", str(config.cpus)])
++            params.extend(["--tmpdir", temp_dir])
++
+         if opts:
+             params.extend(opts)

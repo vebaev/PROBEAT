@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use PROBEAT, cite the software release and the associated article."
+title: "PROBEAT: PRObiotic Bacterial gEnome Analysis Toolkit"
+type: software
+version: 0.1.0-dev
+date-released: 2026-06-15
+license: MIT
+repository-code: "https://github.com/REPLACE_WITH_ORGANIZATION/PROBEAT"
+authors:
+  - family-names: "Baev"
+    given-names: "V."

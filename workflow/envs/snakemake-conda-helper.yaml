@@ -1,0 +1,15 @@
+name: snakemake-conda-helper-2026-06-04
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.11
+  - conda>=24.7.1
+  - mamba>=2
+  - snakemake>=9.22
+  - git
+  - pyyaml
+  - jsonschema
+  - psutil
+  - redis-py
+  - streamlit

@@ -5,12 +5,12 @@ show-failed-logs: true
 keep-going: false
 rerun-incomplete: true
 latency-wait: 30
-use-conda: false
-use-apptainer: true
-apptainer-args: "--cleanenv --bind /home/vebaev/codex:/home/vebaev/codex"
+use-conda: true
+conda-prefix: snakemake_conda_envs
+use-apptainer: false
 default-resources:
   - mem_mb=4000
   - runtime=60
-  - tmpdir="/home/vebaev/codex/.tmp"
+  - tmpdir=".tmp"
 resources:
   - mem_mb=178000

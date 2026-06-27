@@ -1,0 +1,10 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - eggnog-mapper=2.1.13
+  - diamond
+  - hmmer
+  - mmseqs2
+  - matplotlib
+  - numpy

@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - dbcan=5.2.9
+  - poppler
+  - diamond

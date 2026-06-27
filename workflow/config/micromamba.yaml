@@ -2,7 +2,3 @@ channels:
   - conda-forge
   - bioconda
 channel_priority: strict
-pkgs_dirs:
-  - /home/vebaev/codex/micromamba-root/pkgs
-envs_dirs:
-  - /home/vebaev/codex/mamba_envs

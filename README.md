@@ -1,72 +1,192 @@
-# Data Analysis Environment
+# PROBEAT
 
-This workspace is organized for reproducible data analysis with Snakemake as the main workflow manager.
+PROBEAT (PRObiotic Bacterial gEnome Analysis Toolkit) is a Dockerized
+Snakemake workflow for bacterial isolate genome analysis with a probiotic
+interpretation layer, Streamlit web UI, Redis worker, and HTML/PDF reporting.
 
-## Operating Rules
+This repository documents the **full** Docker profile only. The full profile
+builds the complete runtime image for Illumina PE/SE, Oxford Nanopore ONT, and
+HYBRID analyses.
 
-1. Do not use `sudo`.
-2. Do not modify files outside `/home/vebaev/codex/`.
-3. Install software only through Apptainer containers or Mamba environments.
-4. Do not update existing environments.
-5. Create a new environment for each new tool.
-6. Run all analyses through Snakemake.
-7. Record commands and logs for every analysis.
-8. Never delete raw FASTQ files.
-9. Track workflow files with Git.
-10. Use Snakemake as the primary workflow manager.
-11. Use Mamba only for Snakemake and helper tools.
-12. Use Apptainer for all bioinformatics applications.
+## Requirements
 
-## Layout
+- Docker Engine with Docker Compose (`docker-compose`)
+- Internet access for the first image build and database download
+- Sufficient disk space for the full image, workflow outputs, and downloaded
+  biological databases
+- Linux server or workstation recommended for production runs
 
-- `workflow/`: Snakemake workflow, configuration, environments, and profiles.
-- `data/raw/`: immutable raw input data, including FASTQ files.
-- `data/intermediate/`: generated intermediate files.
-- `data/results/`: final machine-readable results.
-- `app_containers/`: Apptainer image files and definitions.
-- `logs/`: Snakemake and rule logs.
-- `reports/`: human-readable reports.
+The databases are not stored in Git and are not baked into the image. They are
+downloaded into `./storage/databases` by the `database-init` Compose service.
 
-## Standard Run Pattern
+## Quickstart
 
-Create or activate a dedicated Mamba environment for Snakemake, then run:
+Clone the repository:
 
 ```bash
-workflow/run_snakemake.sh
+git clone https://github.com/vebaev/PROBEAT.git
+cd PROBEAT
 ```
 
-Bioinformatics tools should be called from Apptainer containers inside Snakemake rules.
-
-The local helper environment is expected at:
+Create the local environment file:
 
 ```bash
-/home/vebaev/codex/mamba_envs/snakemake-helper-2026-06-04
+cp .env.example .env
 ```
 
-It contains Snakemake, Mamba, Apptainer, Git, Python, and helper libraries only.
-
-## Bacterial Genome Workflow
-
-Add Illumina samples to:
+Build the full Docker image:
 
 ```bash
-workflow/config/samples.tsv
+docker build --build-arg INSTALL_PROFILE=full -t probeat:full .
 ```
 
-Format:
+Download all required databases:
+
+```bash
+docker-compose run --rm database-init
+```
+
+Verify the downloaded databases:
+
+```bash
+docker-compose run --rm database-manager
+```
+
+Start the application stack:
+
+```bash
+docker-compose up -d redis worker streamlit
+```
+
+Check that the web UI is healthy:
+
+```bash
+curl http://localhost:9797/_stcore/health
+```
+
+Open the interface:
 
 ```text
-sample	layout	r1	r2
-sample_a	PE	data/raw/sample_a_R1.fastq.gz	data/raw/sample_a_R2.fastq.gz
-sample_b	SE	data/raw/sample_b.fastq.gz	
+http://localhost:9797
 ```
 
-Then run:
+## Validate Installation
+
+Run the full runtime doctor:
 
 ```bash
-workflow/run_snakemake.sh
+docker-compose run --rm worker ./probeat doctor --profile full --strict
 ```
 
-The workflow includes fastp, FastQC, Unicycler, QUAST, CheckM2, GTDB-Tk, Bakta, AMRFinderPlus, BAGEL4 placeholder, antiSMASH, MOB-suite, MultiQC, and final HTML/PDF reports.
+Run the gutSMASH runtime self-test:
 
-Database-dependent tools expect databases under `data/databases/`; see `data/databases/README.md`.
+```bash
+docker-compose run --rm worker \
+  /app/mamba_envs/snakemake-conda-helper-2026-06-04/bin/python \
+  /app/workflow/scripts/run_gutsmash_wrapper.py --self-test
+```
+
+Run a Snakemake dry-run with the bundled smoke FASTQ:
+
+```bash
+docker-compose run --rm worker \
+  workflow/run_sample.sh SMOKE_SE SE tests/data/smoke.fastq \
+  --dry-run --cores 2
+```
+
+## Data Locations
+
+The default `.env.example` keeps runtime data under `./storage`:
+
+- `./storage/uploads`: uploaded FASTQ files
+- `./storage/results`: workflow outputs and reports
+- `./storage/databases`: downloaded biological databases
+- `./storage/logs`: workflow and service logs
+- `./storage/state`: job state files
+
+These directories are intentionally ignored by Git.
+
+## Running Samples
+
+Use the Streamlit UI for routine operation. For command-line runs inside the
+worker container:
+
+```bash
+docker-compose run --rm worker \
+  workflow/run_sample.sh SAMPLE PE /app/data/uploads/SAMPLE_R1.fastq.gz /app/data/uploads/SAMPLE_R2.fastq.gz --cores 16
+
+docker-compose run --rm worker \
+  workflow/run_sample.sh SAMPLE SE /app/data/uploads/SAMPLE.fastq.gz --cores 16
+
+docker-compose run --rm worker \
+  workflow/run_sample.sh SAMPLE ONT /app/data/uploads/SAMPLE.fastq.gz --cores 16
+```
+
+Results are written to:
+
+```text
+storage/results/<sample>/
+```
+
+The final report is written to:
+
+```text
+storage/results/<sample>/report/<sample>_report.html
+storage/results/<sample>/report/<sample>_report.pdf
+```
+
+## Stop Services
+
+```bash
+docker-compose down
+```
+
+This stops the services but keeps `./storage` data.
+
+## Troubleshooting
+
+Check container status:
+
+```bash
+docker-compose ps
+```
+
+Check Streamlit logs:
+
+```bash
+docker logs --tail=120 probeat-streamlit-1
+```
+
+Check worker logs:
+
+```bash
+docker logs --tail=120 probeat-worker-1
+```
+
+Re-run database verification:
+
+```bash
+docker-compose run --rm database-manager
+```
+
+If a workflow step fails, inspect:
+
+```text
+storage/results/<sample>/run/probeat.log
+storage/logs/
+```
+
+## Repository Hygiene
+
+Do not commit runtime data, downloaded databases, FASTQ/SRA inputs, Docker
+caches, Mamba environments, generated reports, or local agent handoff files.
+The repository is intended to contain source, configuration, tests, and
+documentation only.
+
+## License
+
+See [LICENSE](LICENSE).
+
+## Citation
+
+See [CITATION.cff](CITATION.cff).

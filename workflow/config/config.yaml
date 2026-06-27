@@ -14,14 +14,13 @@ policy:
   protect_raw_fastq: true
   workflow_manager: snakemake
   helper_environment_manager: mamba
-  bioinformatics_runtime: apptainer
+  bioinformatics_runtime: mamba
 
 containers:
   fastp: app_containers/fastp_1.3.3.sif
   fastqc: app_containers/fastqc_0.12.1.sif
   unicycler: app_containers/unicycler_0.5.1.sif
   quast: app_containers/quast_5.3.0.sif
-  checkm2: app_containers/checkm2_1.1.0.sif
   gtdbtk: app_containers/gtdbtk_2.7.2.sif
   bakta: app_containers/bakta_1.12.0.sif
   amrfinderplus: app_containers/ncbi-amrfinderplus_4.2.7.sif
@@ -30,19 +29,83 @@ containers:
   mobsuite: app_containers/mob_suite_3.1.9.sif
   multiqc: app_containers/multiqc_1.35.sif
 
+tools:
+  porechop: mamba_envs/porechop-0.2.4/bin/porechop
+  flye: mamba_envs/flye-2.9.6/bin/flye
+  medaka: mamba_envs/medaka/bin/medaka_consensus
+  bakta: mamba_envs/bakta/bin/bakta
+  mash: mamba_envs/mash/bin/mash
+  busco: mamba_envs/busco-6.0.0/bin/busco
+  abricate: mamba_envs/abricate-1.0.1/bin/abricate
+  kofamscan: mamba_envs/kofamscan-1.3.0/bin/exec_annotation
+  keggdecoder: mamba_envs/keggdecoder-1.3/bin/KEGG-decoder
+  dbcan: mamba_envs/dbcan_v5/bin/run_dbcan
+  genomad: mamba_envs/genomad/bin/genomad
+  eggnog: mamba_envs/eggnog/bin/emapper.py
+  sourmash: mamba_envs/sourmash/bin/sourmash
+  rasusa: mamba_envs/rasusa-2.1.0/bin/rasusa
+  bagel4: data/databases/bagel4/bagel4_wrapper.pl
+
 databases:
-  checkm2: data/databases/checkm2
   gtdbtk: data/databases/gtdbtk
-  bakta: data/databases/bakta
-  amrfinderplus: data/databases/amrfinderplus
+  bakta: data/databases/bakta_full
+  amrfinderplus: data/databases/amrfinderplus/2026-05-15.1
   antismash: data/databases/antismash
   bagel4: data/databases/bagel4
   mobsuite: data/databases/mob_suite
+  genomad: data/databases/genomad/genomad_db
+  eggnog: data/databases/eggnog
+  genomespot_models: data/databases/genomespot
+  gutsmash: data/databases/gutsmash
+  fastmlst: data/databases/fastmlst
+  mash: data/databases/mash/RefSeqSketchesDefaults.msh
+  busco: data/databases/busco
+  plasmidfinder: data/databases/abricate
+  vfdb: data/databases/abricate
+  kofamscan: data/databases/kofam
+  dbcan: data/databases/dbcan_v5
+  sourmash_gtdb: data/databases/sourmash/gtdb-reps-rs220-k31.dna.zip
+  sourmash_gtdb_lineages: data/databases/sourmash/gtdb-rs220.lineages.csv
+  ncbi_refseq_species: data/databases/ncbi_refseq_species/refseq_historical_species_representatives.tsv
+  pgmdb: data/databases/PGMDB.tab
 
 params:
   run_optional_db_steps: true
-  run_bagel4: false
+  run_busco: true
+  run_mash: true
+  run_sourmash: true
+  run_bagel4: true
+  bagel4_context_size: 20000
+  fastani_reference_genomes: 15
+  run_plasmidfinder: true
+  run_vfdb: true
+  run_kofamscan: true
+  run_keggdecoder: true
+  run_dbcan: true
+  run_pgmdb: true
+  run_gtdbtk: false
+  run_genomad: true
+  run_eggnog: true
+  run_kegganog: true
+  run_genomespot: true
+  run_gutsmash: true
+  run_fastmlst: false
+  run_fastani: true
+  run_mobsuite: true
+  run_goprobioticprofiler: true
+  run_pycirclize: true
+  target_reads_after_fastp: 3000000
+  rasusa_seed: 42
+  ont_genome_size: 5m
+  ont_target_coverage: 200
+  flye_ont_mode: nano-hq
+  flye_threads: 1
+  medaka_model: r1041_e82_400bps_hac_v4.1.0
+  dbcan_methods: diamond,hmm,dbCANsub
+  mash_top_hits: 10
+  sourmash_top_hits: 3
+  busco_lineage: bacteria_odb10
   min_contig_length: 500
   genetic_code: 11
   organism: Bacteria
-  report_title: Bacterial Genome Analysis Report
+  report_title: PRObiotic Bacterial gEnome Analysis Toolkit (PROBEAT)

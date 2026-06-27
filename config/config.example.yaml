@@ -1,0 +1,17 @@
+# Copy this file and override only deployment-specific settings.
+paths:
+  raw: data/raw
+  intermediate: data/intermediate
+  results: data/results
+  logs: logs
+  databases: data/databases
+
+samples_file: config/samples.example.tsv
+analysis_profile: full
+
+params:
+  min_contig_length: 500
+  genetic_code: 11
+  organism: Bacteria
+  target_reads_after_fastp: 3000000
+  ont_target_coverage: 100

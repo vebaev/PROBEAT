@@ -1,0 +1,31 @@
+baseline:
+  created: "2026-06-15"
+  git_commit: aab23ae
+  note: "Captured from the existing working results before publication hardening."
+  samples:
+    BV7:
+      layout: PE
+      contigs_quast: 21
+      genome_size_bp_quast: 3199168
+      gc_percent: 44.51
+      n50_bp: 365646
+      busco_complete_percent: 100.0
+      busco_duplicated_percent: 1.6
+      bakta_cds: 2993
+      pgmdb_total_hits: 290
+      pgmdb_unique_markers: 191
+    DPL5:
+      layout: ONT
+      contigs_quast: 13
+      genome_size_bp_quast: 2499622
+      gc_percent: 45.91
+      n50_bp: 2335647
+      busco_complete_percent: 94.4
+      busco_duplicated_percent: 0.8
+      bakta_cds: 2470
+      pgmdb_total_hits: 248
+      pgmdb_unique_markers: 166
+tolerances:
+  exact: [contigs_quast, genome_size_bp_quast, n50_bp, bakta_cds, pgmdb_total_hits, pgmdb_unique_markers]
+  gc_percent_absolute: 0.01
+  busco_percent_absolute: 0.1

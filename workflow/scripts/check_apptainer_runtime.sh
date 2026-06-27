@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-workspace="/home/vebaev/codex"
-apptainer="$workspace/mamba_envs/snakemake-helper-2026-06-04/bin/apptainer"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+workspace="${PROBEAT_ROOT:-$(cd "$script_dir/../.." && pwd)}"
+apptainer="${APPTAINER_BIN:-$workspace/mamba_envs/snakemake-helper-2026-06-04/bin/apptainer}"
 image="$workspace/app_containers/fastp_1.3.3.sif"
 
 if [[ ! -s "$image" ]]; then

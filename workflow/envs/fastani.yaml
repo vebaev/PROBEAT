@@ -1,0 +1,10 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - fastani=1.34
+  - ncbi-datasets-cli
+  - pandas
+  - matplotlib
+  - seaborn

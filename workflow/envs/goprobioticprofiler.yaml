@@ -1,0 +1,13 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pip
+  - pandas
+  - numpy
+  - scipy
+  - statsmodels
+  - matplotlib
+  - goatools
+  - pyyaml

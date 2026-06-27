@@ -1,0 +1,320 @@
+arcB	Ornithine carbamoyltransferase	Acid stress/ bile resistance
+argS	Arginine--tRNA ligase	Bile resistance
+atpA	ATP synthase subunit alpha	Acid stress
+atpB	ATP synthase subunit a	Acid stress
+atpC	ATP synthase epsilon chain	Acid stress
+atpD	ATP synthase subunit beta	Acid stress
+atpE	ATP synthase subunit c	Acid stress
+atpF	ATP synthase subunit b	Acid stress
+atpG	ATP synthase gamma chain	Acid stress
+atpH	ATP synthase subunit delta	Acid stress
+bsh	Bile salt hydrolase / Choloylglycine hydrolase	Bile resistance
+clpB	Chaperone protein ClpB	Acid stress
+clpC	ATP-dependent Clp protease ATP-binding subunit ClpC	Asid stress / Heat stress
+clpP/clpP	ATP-dependent Clp protease proteolytic subunit	Acid stress
+copA	Copper transporting ATPase	Acid stress/ bile resistance
+dltD	Protein DltD	Acid stress
+dltC	D-alanine--poly(phosphoribitol) ligase subunit 2 [EC:6.1.1.13]	Acid stress
+dnaJ	Chaperone protein DnaJ	Acid stress/ bile resistance/temperature
+dnaK	Chaperone protein DnaK / HSP70	Acid stress/ bile resistance
+dps	DNA protection during starvation protein	Bile resistance
+eno	Enolase	Acid stress/ bile resistance
+exoA	Exodeoxyribonuclease III	Adhesion
+gap	Glyceraldehyde-3-phosphate dehydrogenase	Acid stress
+glf	UDP-galactopyranose mutase	Bile resistance
+glnA	Glutamine synthetase	Bile resistance
+glpF	Glycerol uptake facilitator	Osmotic stress
+groL/groEL	60 kDa chaperonin	Acid stress
+groS/groES	10 kDa chaperonin	Acid stress/ bile resistance/temperature
+grpE	Protein GrpE / HSP-70 cofactor	Acid stress/ bile resistance/temperature
+htrA	Serine protease HtrA	Acid stress/ bile resistance/temperature
+ldh	L-lactate dehydrogenase	Acid stress
+lspA	Lipoprotein signal peptidase	Adhesion
+luxS	S-ribosylhomocysteine lyase	Acid stress/ bile resistance/temperature
+msrB	Peptide methionine sulfoxide reductase MsrB	Oxidative stress
+nagB/gnp	Glucosamine-6-phosphate deaminase	Bile resistance
+oppA	Oligopeptide–binding protein OppA	Bile resistance
+opuC	Glycine betaine/carnitine/choline transport system permease protein OpuCB	Osmotic stress
+opuCA	osmoprotectant transport system protein	Osmotic stress
+opuBD	osmoprotectant transport system permease protein	Osmotic stress
+pgi	Glucose-6-phosphate isomerase	Acid stress
+pgk	Phosphoglycerate kinase	Acid stress/ bile resistance
+plsC	1-acylglycerol-3-phosphate O-acyltransferase	Acid stress
+dacC	dacC, dacA, dacD; serine-type D-Ala-D-Ala carboxypeptidase (penicillin-binding protein 5/6) [EC:3.4.16.4]	Cell wall formation or adhesion
+pyk	Pyruvate kinase	Acid stress
+pyrG	CTP synthase	Bile resistance
+recA	Protein RecA	Acid stress
+relA	GTP pyrophosphokinase	Acid stress
+rplE	50S ribosomal protein L5	Bile resistance
+rplF	50S ribosomal protein L6	Bile resistance
+rpsC	30S ribosomal protein S3	Bile resistance
+rpsE	30S ribosomal protein S5	Bile resistance
+srtA	Sortase A	Bile resistance/Adhesion
+srtB	Sortase B	Bile resistance/Adhesion
+tpiA	Triosephosphate isomerase	Acid stress
+yjbM	GTP diphosphokinase	Acid stress
+ywaC	GTP diphosphokinase	Acid stress
+hsp33/hslO	Chaperonin (heat shock protein 33)	Adhesion/Temperature stress
+PrtF	Fibronectin-binding protein	Adhesion
+htpX	heat shock protein HtpX	Temperature stress
+hrcA	heat-inducible transcriptional repressor	Temperature stress
+hslV	hslV, clpQ; ATP-dependent HslUV protease, peptidase subunit HslV	Temperature stress
+HSP20	HSP20 family protein	Temperature stress
+ctsR	transcriptional regulator of stress and heat shock response	Temperature stress
+cspA	cspA; cold shock protein	Cold stress
+nhaC	Na+:H+ antiporter, NhaC family	Acid stress
+ppaC	manganese-dependent inorganic pyrophosphatase	Bile resistance
+cfa	cyclopropane-fatty-acyl-phospholipid synthase	Bile resistance
+tuf	TUFM; elongation factor Tu	Adhesion
+gpr	L-glyceraldehyde 3-phosphate reductase	Adhesion
+gapA	glyceraldehyde 3-phosphate dehydrogenase (phosphorylating)	Adhesion
+bgaB	beta-galactosidase	Adhesion
+epsA	protein tyrosine kinase	Adhesion
+epsB	protein-tyrosine kinase	Adhesion
+pgaC	poly-beta-1,6-N-acetyl-D-glucosamine synthase	Adhesion
+fnr	ferredoxin/flavodoxin—NADP+ reductase	Antioxidant
+nrdH	glutaredoxin-like protein NrdH	Antioxidant
+gpx	glutathione peroxidase	Antioxidant
+gsr	glutathione reductase (NADPH)	Antioxidant
+mntH	manganese transport protein	Antioxidant
+mntB	manganese transport system permease protein	Antioxidant
+mntC	manganese transport system substrate-binding protein	Antioxidant
+ndh	NADH:quinone reductase (non-electrogenic)	Antioxidant
+npr	NADH peroxidase	Antioxidant
+poxL	pyruvate oxidase	Antioxidant
+trxA	thioredoxin 1	Antioxidant
+msrA	peptide-methionine (S)-S-oxide reductase	Antioxidant
+msrB	peptide-methionine (R)-S-oxide reductase	Antioxidant
+msrC	L-methionine (R)-S-oxide reductase	Antioxidant
+dltD	D-alanine transfer protein	Immunomodulation
+dltC	D-alanine--poly(phosphoribitol) ligase subunit	Immunomodulation
+dltB	membrane protein involved in D-alanine export	Immunomodulation
+rnr	Cold shock domain	Cold stress
+zntA	Zn2+/Cd2+-exporting ATPase	Ionic and heavy metal stress resistance
+czcD	cobalt-zinc-cadmium efflux system protein	Ionic and heavy metal stress resistance
+corA	magnesium transporter	Ionic and heavy metal stress resistance
+tpx	thioredoxin-dependent peroxiredoxin	Antioxidant
+lepA	Elongation factor 4	Stress adaptation
+lepA	Elongation factor 5	Stress adaptation
+cbh	Conjugated bile acid hydrolase	Bile resistance
+cspP	Cold shock protein	Cold stress
+cspL	Cold shock protein	Cold stress
+cspLA	Cold shock-like protein CspLA	Cold stress
+choS	betaine/carnitine/choline-binding protein	Osmotic stress
+choQ	betaine/carnitine/choline-binding protein	Osmotic stress
+lpdA	Dihydrolipoyl dehydrogenase	Bile resistance
+osmV	Osmoprotectant import ATP‐binding protein OsmV	Osmotic stress
+dltA	D‐alanine‐‐D‐alanyl carrier protein ligase	Acid stress
+rplD	50S ribosomal protein L4	Bile resistance
+gpmB/pspA	Histidine phosphatase family protein	Acid stress
+guaA	GMP synthase [glutaminehydrolyzing]	Acid stress
+pycA	Pyruvate carboxylase	Adhesion
+uvrA	UvrABC system protein A	Acid stress
+pepO	Endopeptidase PepO	Bile resistance
+ponA/pbp1A	sensitive transpeptidase	Bile resistance
+gadB	Glutamate decarboxylase	Acid stress
+clpE	ATP‐dependent Clp protease, ATP‐ binding subunit ClpE	Bile resistance
+opuCB	Glycine betaine/carnitine/choline transport system permease protein OpuCB	Osmotic stress
+eno2	Enolase 2	Bile resistance
+celB	PTS system, cellobiose‐specific EIIC component	Intestinal persistence
+clpL	ATP-dependent Clp protease	Proteases
+clpX	ATP-dependent Clp protease	Proteases
+hslR	ribosome-associated heat shock protein Hsp15	Heat-shock stress
+asp23	alkaline shock protein 23	Alkaline stress
+opuA	ABC-type proline/glycine betaine transport system, ATPase component	Osmotic stress
+nox/nox2	NADH oxidase	Oxidative stress
+katE	catalase	Oxidative stress
+catB	catalase	Oxidative stress
+srpA	catalase	Oxidative stress
+gor	glutathione reductase	Oxidative stress
+mntA	manganese/zinc transport system ATP-binding protein	Oxidative stress
+pgl	cytochrome cd1-nitrite reductase-like	Nitrite stress
+glnH	Glutamine-binding periplasmic protein	Adhesion or host interaction
+psaA	Manganese ABC transporter	Adhesion or host interaction
+fbp	Fibronectin binding	Adhesion or host interaction
+pox1	Pyruvate oxidase	Acid and bile tolerance
+arlS	Two-component sensor histidine kinase	Acid and bile tolerance
+usp5	Universal stress protein	Acid and bile tolerance
+kup	Potassium transporter Kup	Acid and bile tolerance
+rpsS	30S ribosomal protein S19	Acid and bile tolerance
+ppx3	Exopolyphosphatase	Acid and bile tolerance
+ppk	Polyphosphate kinase	Acid and bile tolerance
+ptsI	Phosphoenolpyruvate--protein phosphotransferase	Acid and bile tolerance
+ackA	Acetate kinase	Acid and bile tolerance
+fabH	3-oxoacyl-ACP synthase	Acid and bile tolerance
+yloU	Asp23/Gls24 family envelope stress response protein	Acid and bile tolerance
+pyrD	Dihydroorotate dehydrogenase	Acid and bile tolerance
+pgm	Phosphoglycerate mutase family protein	Acid and bile tolerance
+pepF	Oligoendopeptidase F	Acid and bile tolerance
+EpsC	Tyrosine-protein kinase transmembrane modulator	Adhesion
+EpsD	Tyrosine-protein kinase	Adhesion
+EpsH	Putative glycosyltransferase	Adhesion
+EpsJ	Putative glycosyltransferase	Adhesion
+EpsG	Transmembrane protein	Adhesion
+pbpX	Penicillin-binding protein	Stress response
+mrdA	Penicillin-binding protein	Stress response
+yvgP	Sodium proton antiporter	Acid stress
+yphJ	Decarboxylase	Acid stress
+cspB	Cold shock protein	Cold stress
+cspC	Cold shock protein	Cold stress
+gpo	Member of the glutathione peroxidase family	Oxidative stress
+ywbN	Peroxidase	Oxidative stress
+murA	Cell wall formation	Cell wall formation or adhesion
+ytgP	Polysaccharide biosynthesis protein	Cell wall formation or adhesion
+ywqD	Capsular exopolysaccharide family	Cell wall formation or adhesion
+epsIIG	Glycosyltransferase like family 2	Cell wall formation or adhesion
+tagE3	Glycosyl transferases group 1	Cell wall formation or adhesion
+arbx	Glycosyl transferase family 8	Cell wall formation or adhesion
+ykcC	Glycosyl transferase family 2	Cell wall formation or adhesion
+dltX	D-Ala-teichoic acid biosynthesis protein	Cell wall formation or adhesion
+mapA	Hydrolase, Collagen-binding protein	Adhesions
+speC	ornithine decarboxylase; ODC; pyridoxal phosphate	Polyamine production
+speF	inducible ornithine decarboxylase; acid-inducible ODC	Polyamine production
+speA	arginine decarboxylase; ADC; acid-inducible arginine decarboxylase	Polyamine production
+aguA	agmatine deiminase; AgDI	Polyamine production
+aguB	N-carbamoylputrescine amidohydrolase; carbamoylputrescine hydrolase	Polyamine production
+aguC	putrescine carbamoyltransferase; carbamoyltransferase AguC	Polyamine production
+aguD	agmatine-putrescine antiporter; agmatine/putrescine exchanger	Polyamine production
+aguR	AguR; agmatine deiminase regulator; transcription activator	Polyamine production
+speB	agmatinase; agmatine ureohydrolase	Polyamine production
+speD	S-adenosylmethionine decarboxylase; SAM decarboxylase	Polyamine production
+speE	spermidine synthase; aminopropyltransferase	Polyamine production
+potE	putrescine-ornithine antiporter; PotE	Polyamine production
+potA/potB/potC/potD	spermidine/putrescine ABC transporter; PotABCD	Polyamine production
+gadC	glutamate/gamma-aminobutyrate antiporter; GadC	GABA production
+gadR/gadX	GAD regulator; transcriptional regulator near gad	GABA production
+gabT	GABA aminotransferase; 4-aminobutyrate aminotransferase	GABA production
+gabD	succinate semialdehyde dehydrogenase; SSADH	GABA production
+aroF/aroG/aroH	DAHP synthase isoenzymes	Tryptophan metabolism
+aroB	3-dehydroquinate synthase	Tryptophan metabolism
+aroD	3-dehydroquinate dehydratase	Tryptophan metabolism
+aroE	shikimate dehydrogenase	Tryptophan metabolism
+aroK/aroL	shikimate kinase	Tryptophan metabolism
+aroA	EPSP synthase	Tryptophan metabolism
+aroC	chorismate synthase	Tryptophan metabolism
+trpE	anthranilate synthase component I	Tryptophan metabolism
+trpG	anthranilate synthase glutamine amidotransferase	Tryptophan metabolism
+trpD	anthranilate phosphoribosyltransferase	Tryptophan metabolism
+trpF	phosphoribosylanthranilate isomerase	Tryptophan metabolism
+trpC	indole-3-glycerol phosphate synthase	Tryptophan metabolism
+trpB	tryptophan synthase beta chain	Tryptophan metabolism
+trpA	tryptophan synthase alpha chain	Tryptophan metabolism
+tnaA	tryptophanase; indole production; TnaA	Tryptophan metabolism
+ipdC/aldH	indole-3-pyruvate decarboxylase; aromatic aldehyde dehydrogenase	Tryptophan metabolism
+fldA/fldB/fldC	phenyllactate dehydratase; fldABC; indolelactate dehydratase	Tryptophan metabolism
+ldhL	L-lactate dehydrogenase	SCFA production
+ldhD	D-lactate dehydrogenase	SCFA production
+pta	phosphate acetyltransferase; phosphotransacetylase	SCFA production
+poxB/poxL	pyruvate oxidase; lactate oxidase-like	SCFA production
+pflB	pyruvate formate-lyase	SCFA production
+pflA	PFL activating enzyme; radical SAM	SCFA production
+ppc/pckA	phosphoenolpyruvate carboxylase / PEP carboxykinase	SCFA production
+mdh	malate dehydrogenase	SCFA production
+fumA/fumB/fumC	fumarase	SCFA production
+frdA/frdB/frdC/frdD	fumarate reductase complex	SCFA production
+mmdA/mmdB	methylmalonyl-CoA decarboxylase subunits	SCFA production
+mutA/mutB	methylmalonyl-CoA mutase	SCFA production
+mce	methylmalonyl-CoA epimerase	SCFA production
+sucC/sucD	succinyl-CoA synthetase	SCFA production
+pct	propionate CoA-transferase	SCFA production
+lcdA/lcdB/lcdC	lactoyl-CoA dehydratase complex	SCFA production
+acrA/acrB/acuI	acryloyl-CoA reductase family	SCFA production
+pduC/pduD/pduE	propanediol dehydratase	SCFA production
+pduP	propionaldehyde dehydrogenase	SCFA production
+pduL/pduW	phosphotransacylase/kinase branch	SCFA production
+pduQ	propanol dehydrogenase	SCFA production
+thl/atoB	acetyl-CoA acetyltransferase/thiolase	SCFA production
+hbd	3-hydroxybutyryl-CoA dehydrogenase	SCFA production
+crt	crotonase	SCFA production
+bcd	butyryl-CoA dehydrogenase	SCFA production
+etfA/etfB	electron transfer flavoprotein alpha/beta	SCFA production
+ptb	phosphotransbutyrylase	SCFA production
+buk	butyrate kinase	SCFA production
+but	butyryl-CoA:acetate CoA-transferase	SCFA production
+gabT/gabD/4hbt	GABA-to-butyrate route enzymes	SCFA production
+kamA/kdd/kal	lysine fermentation route enzymes	SCFA production
+hgdA/hgdB/hgdC	2-hydroxyglutaryl-CoA dehydratase complex	SCFA production
+ribA/ribBA	GTP cyclohydrolase II / 3,4-dihydroxy-2-butanone 4-phosphate synthase	Vitamin biosynthesis
+ribB	3,4-dihydroxy-2-butanone 4-phosphate synthase	Vitamin biosynthesis
+ribD/ribG	riboflavin deaminase/reductase	Vitamin biosynthesis
+ribE	riboflavin synthase alpha chain	Vitamin biosynthesis
+ribH	6,7-dimethyl-8-ribityllumazine synthase	Vitamin biosynthesis
+ribF/ribC	riboflavin kinase/FMN adenylyltransferase	Vitamin biosynthesis
+ribU	riboflavin transporter	Vitamin biosynthesis
+folE	GTP cyclohydrolase I	Vitamin biosynthesis
+folQ	dihydroneopterin triphosphate pyrophosphatase	Vitamin biosynthesis
+folB	dihydroneopterin aldolase	Vitamin biosynthesis
+folK	HPPK; hydroxymethylpterin pyrophosphokinase	Vitamin biosynthesis
+folP	dihydropteroate synthase	Vitamin biosynthesis
+folC/folC1/folC2	dihydrofolate synthase / folylpolyglutamate synthase	Vitamin biosynthesis
+folA	dihydrofolate reductase	Vitamin biosynthesis
+pabA/pabB/pabC	p-aminobenzoate biosynthesis enzymes	Vitamin biosynthesis
+thiC	HMP-P synthase	Vitamin biosynthesis
+thiD	HMP/HMP-P kinase	Vitamin biosynthesis
+thiE	thiamine phosphate synthase	Vitamin biosynthesis
+thiG/thiH/thiO	thiazole biosynthesis proteins	Vitamin biosynthesis
+thiS/thiF/thiI	sulfur carrier/activating proteins	Vitamin biosynthesis
+thiL	thiamine monophosphate kinase	Vitamin biosynthesis
+thiM/thiN/thiT	thiamine salvage/transport	Vitamin biosynthesis
+nadA	quinolinate synthase	Vitamin biosynthesis
+nadB	L-aspartate oxidase	Vitamin biosynthesis
+nadC	quinolinate phosphoribosyltransferase	Vitamin biosynthesis
+nadD	nicotinate-nucleotide adenylyltransferase	Vitamin biosynthesis
+nadE	NAD synthetase	Vitamin biosynthesis
+pncA/pncB/nadV	niacin/nicotinamide salvage	Vitamin biosynthesis
+panB	3-methyl-2-oxobutanoate hydroxymethyltransferase	Vitamin biosynthesis
+panC	pantoate-beta-alanine ligase	Vitamin biosynthesis
+panD	aspartate 1-decarboxylase	Vitamin biosynthesis
+panE/ilvC-like	ketopantoate reductase	Vitamin biosynthesis
+coaA/coaB/coaC/coaD/coaE	CoA biosynthesis enzymes	Vitamin biosynthesis
+pdxS	pyridoxal 5'-phosphate synthase subunit PdxS	Vitamin biosynthesis
+pdxT	glutamine amidotransferase subunit PdxT	Vitamin biosynthesis
+pdxA/pdxJ	DXP-dependent PLP enzymes	Vitamin biosynthesis
+pdxK/pdxY	pyridoxal kinase/salvage	Vitamin biosynthesis
+bioF	8-amino-7-oxononanoate synthase	Vitamin biosynthesis
+bioA	7,8-diaminopelargonic acid aminotransferase	Vitamin biosynthesis
+bioD	dethiobiotin synthetase	Vitamin biosynthesis
+bioB	biotin synthase	Vitamin biosynthesis
+bioC/bioH	methyltransferase/esterase for pimeloyl-ACP route	Vitamin biosynthesis
+bioY/bioM/bioN	biotin transporter	Vitamin biosynthesis
+cbiA/cbiB/cbiC/cbiD/cbiE/cbiF/cbiG/cbiH/cbiJ/cbiK/cbiL/cbiP/cbiT	anaerobic cobalamin biosynthesis cbi genes	Vitamin biosynthesis
+cobA/cobI/cobG/cobJ/cobM/cobF/cobK/cobL/cobH	aerobic cobalamin biosynthesis cob genes	Vitamin biosynthesis
+cobU/cobS/cobT	lower-ligand activation/assembly	Vitamin biosynthesis
+bluB	DMB lower ligand biosynthesis	Vitamin biosynthesis
+btuF/btuC/btuD	cobalamin transporter	Vitamin biosynthesis
+menF	isochorismate synthase	Vitamin biosynthesis
+menD	2-succinyl-6-hydroxy-2,4-cyclohexadiene-carboxylate synthase	Vitamin biosynthesis
+menH	SHCHC hydrolase	Vitamin biosynthesis
+menC	o-succinylbenzoate synthase	Vitamin biosynthesis
+menE	o-succinylbenzoate-CoA ligase	Vitamin biosynthesis
+menB	DHNA synthase	Vitamin biosynthesis
+menA/menG	prenyltransferase/methyltransferase	Vitamin biosynthesis
+mub/mbp	mucus-binding; MucBP; MUB; mucin-binding; LPXTG	Adhesion
+msa	mannose-specific adhesin; Msa; mannose adhesion	Adhesion
+fbpA/fbp	fibronectin-binding; FbpA; Fbp	Adhesion
+cwaA	cell wall anchored protein; CwaA; adhesion-associated	Adhesion
+srtC	sortase C; pilus-specific sortase	Adhesion
+spaCBA	SpaC; SpaB; SpaA; pilin; pilus	Adhesion
+spaFED	SpaF; SpaE; SpaD; pilin; pilus	Adhesion
+slpA/slpB	S-layer protein; SlpA; surface layer	Adhesion
+apf/aggL	aggregation-promoting factor; autoaggregation; Agg	Adhesion
+cna/cbp	collagen-binding; Cna; Cbp	Adhesion
+WxL-domain proteins	WxL domain; cell surface protein	Adhesion
+epsE	priming glycosyltransferase	Exopolysaccharide production
+epsF/epsG/epsH/epsI/epsJ	cluster glycosyltransferases	Exopolysaccharide production
+epsR/epsX	EPS regulator/accessory conserved proteins	Exopolysaccharide production
+wzx	polysaccharide flippase	Exopolysaccharide production
+wzy	polysaccharide polymerase	Exopolysaccharide production
+wzz	chain-length determinant	Exopolysaccharide production
+cpsA/cpsB/cpsC/cpsD	capsular polysaccharide regulatory genes	Exopolysaccharide production
+gtf/gt	glycosyltransferase family proteins	Exopolysaccharide production
+galE/galT/galK	galactose metabolism/nucleotide sugar supply	Exopolysaccharide production
+galU	UTP-glucose-1-phosphate uridylyltransferase	Exopolysaccharide production
+gtaB	UTP-glucose-1-phosphate uridylyltransferase	Exopolysaccharide production
+pgmA/pgm	phosphoglucomutase	Exopolysaccharide production
+rmlA/rmlB/rmlC/rmlD	dTDP-L-rhamnose biosynthesis	Exopolysaccharide production
+manA/manB/manC	mannose/fructose nucleotide-sugar pathway	Exopolysaccharide production
+glmS/glmM/glmU	UDP-N-acetylglucosamine biosynthesis	Exopolysaccharide production
+ugd	UDP-glucose 6-dehydrogenase	Exopolysaccharide production
+wza/wzb/wzc	polysaccharide export/regulation proteins	Exopolysaccharide production
+epsK/epsL/tagH/tagG-like	ABC transporter/export accessory proteins	Exopolysaccharide production

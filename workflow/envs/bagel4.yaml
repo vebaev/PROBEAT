@@ -1,0 +1,14 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - perl
+  - perl-json
+  - perl-bioperl
+  - perl-dbi
+  - perl-dbd-sqlite
+  - hmmer
+  - blast
+  - blast-legacy
+  - glimmer
+  - librsvg

@@ -37,7 +37,7 @@ Use only project-local database paths:
 
 ```text
 data/databases/
-├── checkm2/
+├── busco/
 ├── gtdbtk/
 ├── bakta/
 ├── amrfinderplus/
@@ -54,7 +54,7 @@ Do not use `/tmp` for database downloads or extraction.
 2. Install small databases first:
    - AMRFinderPlus
    - MOB-suite
-   - CheckM2
+   - BUSCO bacteria lineage data
 3. Install Bakta light.
 4. Install antiSMASH databases or switch to a full antiSMASH container strategy.
 5. Install GTDB-Tk last because it is the largest and most storage-sensitive.
@@ -70,7 +70,7 @@ Use Bakta light by default.
 | Existing Apptainer/cache data | 11 GB |
 | GTDB-Tk R232 | 110-130 GB |
 | Bakta light | 5-10 GB |
-| CheckM2 | 5-10 GB |
+| BUSCO bacteria lineage | <1 GB |
 | AMRFinderPlus | 1 GB |
 | antiSMASH | 10-20 GB |
 | MOB-suite | 2-5 GB |
@@ -78,7 +78,7 @@ Use Bakta light by default.
 
 Recommended reserved space: 220-300 GB.
 
-Current `/home/vebaev/codex` free space was about 3.0 TB, so storage is sufficient.
+The original server workspace had about 3.0 TB free, so storage was sufficient.
 
 ## Commands after FUSE is fixed
 

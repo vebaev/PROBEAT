@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+real="${TRNASCAN_SE_REAL:-}"
+if [ -z "$real" ] || [ ! -x "$real" ]; then
+    echo "Missing TRNASCAN_SE_REAL executable for Bakta tRNAscan-SE wrapper" >&2
+    exit 2
+fi
+
+real_bin="$(dirname "$real")"
+real_env="$(dirname "$real_bin")"
+real_perl="$real_bin/perl"
+export PATH="$real_bin:$PATH"
+export PERL5LIB="$real_env/lib/perl5/5.32/site_perl:$real_env/lib/perl5/site_perl:$real_env/lib/perl5/5.32/vendor_perl:$real_env/lib/perl5/vendor_perl:$real_env/lib/perl5/5.32/core_perl:$real_env/lib/perl5/core_perl:${PERL5LIB:-}"
+
+if [ -x "$real_perl" ]; then
+    exec "$real_perl" "$real" "$@"
+fi
+exec "$real" "$@"

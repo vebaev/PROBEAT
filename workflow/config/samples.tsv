@@ -1,1 +1,5 @@
 sample	layout	r1	r2
+BV3	PE	data/raw/dani_illumina/BV3_MKDN260024976-1A_23M77YLT4_L1_1.fq.gz	data/raw/dani_illumina/BV3_MKDN260024976-1A_23M77YLT4_L1_2.fq.gz
+F6	PE	data/raw/dani_illumina/F6_MKDN260024975-1A_23M77YLT4_L1_1.fq.gz	data/raw/dani_illumina/F6_MKDN260024975-1A_23M77YLT4_L1_2.fq.gz
+BV7	PE	data/raw/dani_illumina/BV7_MKDN260022080-1A_23M3FTLT4_L4_1.fq.gz	data/raw/dani_illumina/BV7_MKDN260022080-1A_23M3FTLT4_L4_2.fq.gz
+DPL5	ONT	data/raw/ONT/DPL5.fastq	""

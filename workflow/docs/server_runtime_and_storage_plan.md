@@ -17,7 +17,7 @@ Observed locally:
 - `fuse-overlayfs`, `squashfuse`, and `squashfuse_ll` binaries exist.
 - SIF execution, `--unsquash`, and sandbox execution all fail because Apptainer still needs FUSE/overlay support.
 
-This cannot be fixed safely from `/home/vebaev/codex/` without `sudo` or system configuration changes.
+This cannot be fixed safely from the repository workspace without `sudo` or system configuration changes.
 
 Administrator-side options:
 
@@ -29,12 +29,12 @@ Do not use `sudo` from this workspace.
 
 ## Current local space
 
-- `/home/vebaev/codex`: 23 TB filesystem, about 3.0 TB free at the time of check.
+- Repository filesystem: 23 TB filesystem, about 3.0 TB free at the time of check.
 - `/tmp`: about 8.5 GB free, too small for database work.
 - Current pulled containers: about 5.3 GB.
 - Current Apptainer/cache data: about 11 GB.
 
-Use `/home/vebaev/codex/.tmp` and `data/databases/`, not `/tmp`, for large work.
+Use `<repository-root>/.tmp` and `data/databases/`, not `/tmp`, for large work.
 
 ## Database size estimates
 
@@ -45,7 +45,7 @@ Recommended planning target: reserve at least 250-300 GB for databases and 50-10
 | GTDB-Tk 2.7.x | R232 reference data | 60.8 GB compressed; ~100 GB unarchived | 110-130 GB |
 | Bakta 1.12 | full DB | 30 GB zipped; 84 GB unzipped | 90-100 GB |
 | Bakta 1.12 | light DB | 1.3 GB zipped; 3.9 GB unzipped | 5-10 GB |
-| CheckM2 1.1 | Zenodo reference DB | 1.735 GB compressed | 5-10 GB |
+| BUSCO 6 | bacteria_odb10 lineage dataset | small to medium | <1 GB |
 | AMRFinderPlus | latest NCBI DB listing | ~123 MB visible files | 1 GB |
 | antiSMASH 8 | official standalone-full image includes DB | ~9 GB Docker download | 10-20 GB |
 | MOB-suite 3.1.9 | Zenodo data.tar.gz | 473 MB compressed | 2-5 GB after setup |
@@ -53,4 +53,5 @@ Recommended planning target: reserve at least 250-300 GB for databases and 50-10
 
 If Bakta light is acceptable, a practical database budget is about 140-170 GB. If Bakta full is used, plan for about 230-270 GB before analysis outputs.
 
-The selected plan is Bakta light. See `workflow/docs/database_install_plan_bakta_light.md`.
+The current workflow defaults to Bakta Full v6.0. Bakta light remains available
+as a lower-storage installation option.

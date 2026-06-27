@@ -1,0 +1,24 @@
+Prebiotic substrate / group	Main dbCAN / CAZy families	Typical enzymes / functions
+FOS / inulin / inulin-type fructans	GH32	β-fructofuranosidase; inulinase; exo-/endo-fructanase; levanase-like enzymes
+FOS / inulin - refined fructan signal	GH32 + CBM66	Fructan-active enzymes with fructan-binding module; improved fructan/inulin/levan substrate indication
+Levan / β-2,6 fructan	GH32; GH68	Levanase; fructan β-fructosidase; levansucrase/fructosyltransferase for levan synthesis
+Fructan/FOS synthesis from sucrose	GH68	Levansucrase; inulosucrase; fructosyltransferase
+GOS / β-galactooligosaccharides	GH2; GH42	β-galactosidase; GOS/lactose hydrolysis
+Lactose / lactose-derived oligosaccharides	GH2; GH42; GH1	β-galactosidase; lactose hydrolysis; galactoside utilization
+α-GOS / raffinose-family oligosaccharides (raffinose, stachyose, verbascose)	GH36; GH27	α-galactosidase; RFO hydrolysis
+Sucrose-related oligosaccharides	GH13; GH32; GH36; GH68	Sucrose phosphorylase/hydrolase; α-glucosidase; fructosidase; α-galactosidase
+XOS / xylooligosaccharides	GH43; GH120; GH8; GH3; GH51	β-xylosidase; exo-oligoxylanase; α-L-arabinofuranosidase
+Arabinoxylan / AXOS	GH43; GH51; GH62; GH3; GH10; GH11; CE1; CE6; CE7	α-L-arabinofuranosidase; β-xylosidase; xylanase; feruloyl/acetyl esterases
+Arabinan / arabino-oligosaccharides (AOS)	GH43; GH51; GH127; GH121; GH1; GH3	α-/β-L-arabinofuranosidase; arabinan side-chain degradation
+Xylan polymer	GH10; GH11; GH43; GH8; GH120; CE1; CE7	Endo-xylanase; β-xylosidase; arabinofuranosidase; xylan debranching
+Mannan / galactomannan / MOS	GH5; GH26; GH113; GH134; GH2; GH36	β-mannanase; β-mannosidase; α-galactosidase; galactomannan side-chain removal
+Locust bean gum / guar gum / plant galactomannan	GH5; GH26; GH36; GH2	Endo-β-mannanase; α-galactosidase; β-galactosidase
+Starch / resistant starch / maltodextrin	GH13; GH31; GH77; GH65; CBM20; CBM25; CBM26; CBM48	α-amylase; α-glucosidase; pullulanase; 4-α-glucanotransferase; starch-binding modules
+Isomaltooligosaccharides / α-glucans	GH13; GH31; GH66; GH70; GH77	α-glucosidase; dextranase/isomaltodextranase; glucansucrase; 4,6-α-glucanotransferase
+Pectin backbone / homogalacturonan	GH28; PL1; PL9; PL10; CE8	Polygalacturonase; pectate lyase; pectin methylesterase
+Pectin side chains: galactan / arabinogalactan	GH53; GH43; GH2; GH35; GH51	Endo-β-1,4-galactanase; β-galactosidase; arabinofuranosidase
+Type I/II arabinogalactan	GH53; GH43; GH51; GH127; GH121	β-galactanase; α-/β-arabinofuranosidase
+β-glucans: oat/barley mixed-linkage β-glucan	GH16; GH3; CBM4; CBM6	Endo-β-glucanase; β-glucosidase; β-glucan-binding modules
+Laminarin / fungal β-1,3-glucan	GH16; GH3; GH30; GH158; GH157	β-1,3-glucanase; β-glucosidase
+Cellobiose / cello-oligosaccharides	GH1; GH3; GH5; GH94	β-glucosidase; cellobiose phosphorylase; cello-oligosaccharide utilization
+Host/diet overlap: fucosylated/sialylated glycans	GH29; GH95; GH33; GH20	α-fucosidase; sialidase; β-N-acetylhexosaminidase

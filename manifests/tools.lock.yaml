@@ -1,0 +1,34 @@
+schema_version: 1
+git_pins:
+  bagel4: dcb961a8cf7487d7affd7788881b49e64b25313b
+  gutsmash: 1651919f7e93d09a995ea080a3c029be84ee48c6
+tools:
+  - {name: snakemake, version: ">=9.22", executable: snakemake, candidates: [mamba_envs/snakemake-conda-helper-2026-06-04/bin/snakemake]}
+  - {name: fastp, version: "1.0.1", executable: fastp}
+  - {name: fastqc, version: "0.12.1", executable: fastqc}
+  - {name: porechop, version: "0.2.4", executable: porechop, candidates: [mamba_envs/porechop-0.2.4/bin/porechop]}
+  - {name: rasusa, version: "2.1.0", executable: rasusa, candidates: [mamba_envs/rasusa-2.1.0/bin/rasusa]}
+  - {name: unicycler, version: "0.5.1", executable: unicycler}
+  - {name: flye, version: "2.9.6", executable: flye, candidates: [mamba_envs/flye-2.9.6/bin/flye]}
+  - {name: medaka, version: "2.x", executable: medaka_consensus, candidates: [mamba_envs/medaka/bin/medaka_consensus]}
+  - {name: quast, version: "5.3.0", executable: quast.py}
+  - {name: mash, version: "2.x", executable: mash, candidates: [mamba_envs/mash/bin/mash]}
+  - {name: sourmash, version: "4.x", executable: sourmash, candidates: [mamba_envs/sourmash/bin/sourmash]}
+  - {name: busco, version: "6.0.0", executable: busco, candidates: [mamba_envs/busco-6.0.0/bin/busco]}
+  - {name: bakta, version: "1.12.0", executable: bakta}
+  - {name: abricate, version: "1.0.1", executable: abricate, candidates: [mamba_envs/abricate-1.0.1/bin/abricate]}
+  - {name: amrfinderplus, version: "4.2.7", executable: amrfinder}
+  - {name: antismash, version: "8.0.4", executable: antismash}
+  - {name: bagel4, version: dcb961a8, executable: bagel4_wrapper.pl, candidates: [data/databases/bagel4/bagel4_wrapper.pl]}
+  - {name: dbcan, version: "5.2.9", executable: run_dbcan, candidates: [mamba_envs/dbcan_v5/bin/run_dbcan], check_args: [version]}
+  - {name: eggnog, version: "2.1.15", executable: emapper.py, candidates: [mamba_envs/eggnog/bin/emapper.py], check_args: [--version, --data_dir, data/databases/eggnog]}
+  - {name: fastani, version: "1.34", executable: fastani, candidates: [mamba_envs/fastani/bin/fastani, mamba_envs/fastani/bin/fastANI], check_args: [--version], check_env: {LD_LIBRARY_PATH: ./mamba_envs/fastani/lib}}
+  - {name: genomad, version: "1.x", executable: genomad, candidates: [mamba_envs/genomad/bin/genomad]}
+  - {name: genomespot, version: "1.x", executable: python, candidates: [mamba_envs/genomespot/bin/python]}
+  - {name: goprobioticprofiler, version: "1.0.0", executable: python, candidates: [mamba_envs/functional-python/bin/python, mamba_envs/goprobioticprofiler/bin/python], check_args: [-m, goprobioticprofiler, --version], check_env: {PYTHONPATH: ./workflow/tools/goprobioticprofiler}}
+  - {name: gutsmash, version: 1651919f, executable: python, candidates: [mamba_envs/gutsmash/bin/python]}
+  - {name: kegganog, version: "1.x", executable: KEGGaNOG, candidates: [mamba_envs/functional-python/bin/KEGGaNOG, mamba_envs/kegganog/bin/KEGGaNOG]}
+  - {name: keggdecoder, version: "1.3-or-fallback", executable: KEGG-decoder, candidates: [mamba_envs/functional-python/bin/KEGG-decoder, mamba_envs/keggdecoder-1.3/bin/KEGG-decoder, workflow/scripts/keggdecoder_kofam_fallback.py]}
+  - {name: kofamscan, version: "1.3.0", executable: exec_annotation, candidates: [mamba_envs/kofamscan-1.3.0/bin/exec_annotation]}
+  - {name: mobsuite, version: "3.1.9", executable: mob_recon, candidates: [mamba_envs/mobsuite/bin/mob_recon]}
+  - {name: multiqc, version: "1.35", executable: multiqc}

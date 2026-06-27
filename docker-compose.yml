@@ -1,0 +1,75 @@
+name: probeat
+
+x-probeat-service: &probeat-service
+  image: ${PROBEAT_IMAGE:-probeat:0.1.0-dev}
+  build:
+    context: .
+    args:
+      INSTALL_PROFILE: ${PROBEAT_INSTALL_PROFILE:-probiotic}
+  environment:
+    PROBEAT_ROOT: /app
+    PROBEAT_GUTSMASH_SRC: /opt/probeat/gutsmash_src
+    PROBEAT_DATABASES: /app/data/databases
+    PROBEAT_RESULTS: /app/data/results
+    PROBEAT_STATE: /app/data/state
+    PROBEAT_UPLOADS: /app/data/uploads
+    PROBEAT_WORKFLOW_VERSION: ${PROBEAT_WORKFLOW_VERSION:-1.0}
+    REDIS_URL: redis://redis:6379/0
+  volumes:
+    - ${PROBEAT_UPLOADS_HOST:-./storage/uploads}:/app/data/uploads
+    - ${PROBEAT_DATABASES_HOST:-./storage/databases}:/app/data/databases
+    - ${PROBEAT_RESULTS_HOST:-./storage/results}:/app/data/results
+    - ${PROBEAT_LOGS_HOST:-./storage/logs}:/app/logs
+    - ${PROBEAT_STATE_HOST:-./storage/state}:/app/data/state
+    - ${PROBEAT_CONDA_ENVS_HOST:-probeat_snakemake_conda_envs}:/app/snakemake_conda_envs
+    - ${PROBEAT_CONDA_PKGS_HOST:-probeat_micromamba_pkgs}:/app/micromamba-root/pkgs
+
+services:
+  streamlit:
+    <<: *probeat-service
+    command: ["streamlit", "run", "web/streamlit_app/app.py", "--server.address=0.0.0.0", "--server.port=9797", "--server.maxUploadSize=1024"]
+    ports:
+      - "${PROBEAT_WEB_PORT:-9797}:9797"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9797/_stcore/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  worker:
+    <<: *probeat-service
+    command: ["python", "web/worker.py"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ./storage/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  database-manager:
+    <<: *probeat-service
+    command: ["./probeat", "databases", "verify"]
+    profiles: ["tools"]
+
+  database-init:
+    <<: *probeat-service
+    command: ["./probeat", "databases", "install"]
+    profiles: ["tools"]
+
+volumes:
+  probeat_snakemake_conda_envs:
+  probeat_micromamba_pkgs:

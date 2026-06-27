@@ -1,8 +1,10 @@
 configfile: "workflow/config/config.yaml"
 
 import csv
+import os
 from pathlib import Path
 
+PYTHON = os.environ.get("PROBEAT_PYTHON", "python3")
 
 def load_samples(samples_file):
     path = Path(samples_file)
@@ -16,30 +18,52 @@ def load_samples(samples_file):
         if not sample:
             continue
         layout = row["layout"].strip().upper()
-        if layout not in {"PE", "SE"}:
+        if layout not in {"PE", "SE", "ONT", "HYBRID"}:
             raise ValueError(f"Sample {sample} has unsupported layout: {layout}")
         if not row["r1"].strip():
             raise ValueError(f"Sample {sample} is missing r1")
-        if layout == "PE" and not row["r2"].strip():
+        if layout in {"PE", "HYBRID"} and not row["r2"].strip():
             raise ValueError(f"Sample {sample} is PE but missing r2")
-        samples[sample] = {"layout": layout, "r1": row["r1"].strip(), "r2": row["r2"].strip()}
+        long_reads = row.get("long_reads", "").strip()
+        if layout == "HYBRID" and not long_reads:
+            raise ValueError(f"Sample {sample} is HYBRID but missing long_reads")
+        samples[sample] = {"layout": layout, "r1": row["r1"].strip(), "r2": row["r2"].strip(), "long_reads": long_reads}
     return samples
 
 
 SAMPLES = load_samples(config["samples_file"])
 SAMPLE_NAMES = sorted(SAMPLES)
+ANALYSIS_PROFILE = config.get("analysis_profile", "full")
+EXTENDED_ANALYSIS = ANALYSIS_PROFILE != "core"
 
 
-def container(name):
-    return config["containers"][name]
+def env(name):
+    return f"envs/{name}.yaml"
 
 
 def db(name):
+    if name == "bakta":
+        preferred = Path(config["databases"][name])
+        fallback = Path("data/databases/bakta")
+        if preferred.exists():
+            return str(preferred)
+        if fallback.exists():
+            return str(fallback)
     return config["databases"][name]
 
 
+def tool(name):
+    value = config.get("tools", {}).get(name, name)
+    path = Path(value)
+    if "/" in value and path.exists():
+        return str(path.resolve())
+    return value
+
+
 def assembly_for_sample(sample):
-    return f"data/results/assemblies/{sample}/assembly.fasta"
+    if SAMPLES[sample]["layout"] == "ONT":
+        return f"data/results/{sample}/medaka/consensus.fasta"
+    return f"data/results/{sample}/assembly/assembly.fasta"
 
 
 def assembly(wildcards):
@@ -50,34 +74,93 @@ def trimmed_done(sample):
     return f"data/intermediate/trimmed/{sample}.done"
 
 
-def fastqc_targets():
+def fastqc_targets(sample=None):
     targets = []
-    for sample, meta in SAMPLES.items():
-        targets.append(f"data/results/qc/fastqc/{sample}_R1_fastqc.html")
-        if meta["layout"] == "PE":
-            targets.append(f"data/results/qc/fastqc/{sample}_R2_fastqc.html")
+    selected = {sample: SAMPLES[sample]} if sample else SAMPLES
+    for name, meta in selected.items():
+        if meta["layout"] in {"PE", "SE", "HYBRID"}:
+            targets.append(f"data/results/{name}/qc/fastqc/{name}_R1_fastqc.html")
+        if meta["layout"] in {"PE", "HYBRID"}:
+            targets.append(f"data/results/{name}/qc/fastqc/{name}_R2_fastqc.html")
+    return targets
+
+
+def sample_analysis_targets(s):
+    targets = fastqc_targets(s)
+    targets += [assembly_for_sample(s), f"data/results/{s}/quast/report.tsv"]
+    if config["params"].get("run_mash", False):
+        targets += [f"data/results/{s}/mash/top_hits.tsv"]
+    if config["params"].get("run_sourmash", False):
+        targets += [f"data/results/{s}/sourmash/gather.with-lineages.csv"]
+    if config["params"].get("run_busco", False):
+        targets += [f"data/results/{s}/busco/busco_summary.txt"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_plasmidfinder", False):
+        targets += [f"data/results/{s}/plasmidfinder/{s}.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_vfdb", False):
+        targets += [f"data/results/{s}/vfdb/{s}.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_kofamscan", False):
+        targets += [f"data/results/{s}/kofamscan/{s}.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_keggdecoder", False):
+        targets += [f"data/results/{s}/keggdecoder/pathway_completeness.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_dbcan", False):
+        targets += [f"data/results/{s}/dbcan/overview.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_pgmdb", False):
+        targets += [
+            f"data/results/{s}/pgmdb/summary.tsv",
+            f"data/results/{s}/pgmdb/pgmdb_functional_potential.png",
+        ]
+    if EXTENDED_ANALYSIS and config["params"].get("run_gtdbtk", False):
+        targets += [f"data/results/{s}/gtdbtk/gtdbtk.bac120.summary.tsv"]
+    targets += [f"data/results/{s}/bakta/{s}.gff3"]
+    if EXTENDED_ANALYSIS:
+        targets += [f"data/results/{s}/amrfinder/{s}.tsv"]
+        targets += [f"data/results/{s}/abricate/{s}_card.tsv"]
+        targets += [f"data/results/{s}/abricate/{s}_megares.tsv"]
+        targets += [f"data/results/{s}/bagel4/bacteriocin_clusters.tsv"]
+        targets += [
+            f"data/results/{s}/antismash/index.html",
+            f"data/results/{s}/antismash/{s}_regions.tsv",
+        ]
+    if EXTENDED_ANALYSIS and config["params"].get("run_genomad", False):
+        targets += [f"data/results/{s}/genomad/assembly_summary/assembly_plasmid_summary.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_eggnog", False):
+        targets += [f"data/results/{s}/eggnog/{s}.emapper.annotations"]
+        targets += [f"data/results/{s}/gut_brain_markers.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_kegganog", False):
+        targets += [f"data/results/{s}/kegganog/{s}_pathways.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_genomespot", False):
+        targets += [f"data/results/{s}/genomespot/{s}.predictions.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_gutsmash", False):
+        targets += [f"data/results/{s}/gutsmash/.probeat_gutsmash_status.json"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_fastmlst", False):
+        targets += [f"data/results/{s}/fastmlst/{s}_mlst.tsv"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_fastani", False):
+        targets += [f"data/results/{s}/fastani/{s}_ani_heatmap.png"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_mobsuite", False):
+        targets += [f"data/results/{s}/mobsuite/contig_report.txt"]
+        targets += [f"data/results/{s}/mobsuite/mobtyper_results.txt"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_goprobioticprofiler", False):
+        targets += [f"data/results/{s}/goprobioticprofiler/probiotic_go_summary.json"]
+    if EXTENDED_ANALYSIS and config["params"].get("run_pycirclize", False):
+        targets += [f"data/results/{s}/genome_map/{s}_genome_map.png"]
     return targets
 
 
 def workflow_targets():
     if not SAMPLE_NAMES:
-        return ["data/results/workflow_initialized.txt", "reports/workflow_initialized.txt"]
-    targets = []
-    targets += fastqc_targets()
-    targets += [assembly_for_sample(s) for s in SAMPLE_NAMES]
-    targets += [f"data/results/quast/{s}/report.tsv" for s in SAMPLE_NAMES]
-    targets += [f"data/results/checkm2/{s}/quality_report.tsv" for s in SAMPLE_NAMES]
-    targets += [f"data/results/gtdbtk/{s}/gtdbtk.bac120.summary.tsv" for s in SAMPLE_NAMES]
-    targets += [f"data/results/bakta/{s}/{s}.gff3" for s in SAMPLE_NAMES]
-    targets += [f"data/results/amrfinder/{s}.tsv" for s in SAMPLE_NAMES]
-    targets += [f"data/results/bagel4/{s}/bagel4.done" for s in SAMPLE_NAMES]
-    targets += [f"data/results/antismash/{s}/index.html" for s in SAMPLE_NAMES]
-    targets += [f"data/results/mobsuite/{s}/mobtyper_results.txt" for s in SAMPLE_NAMES]
-    return targets
+        return ["data/results/workflow_initialized.txt"]
+    return [target for sample in SAMPLE_NAMES for target in sample_analysis_targets(sample)]
 
 
 ANALYSIS_TARGETS = workflow_targets()
-FINAL_TARGETS = ANALYSIS_TARGETS + ["data/results/multiqc/multiqc_report.html", "reports/bacterial_genome_report.html", "reports/bacterial_genome_report.pdf"] if SAMPLE_NAMES else ANALYSIS_TARGETS
+FINAL_TARGETS = [
+    target
+    for sample in SAMPLE_NAMES
+    for target in (
+        f"data/results/{sample}/report/{sample}_report.html",
+        f"data/results/{sample}/report/{sample}_report.pdf",
+    )
+] if SAMPLE_NAMES else ANALYSIS_TARGETS
 
 
 rule all:
@@ -87,8 +170,7 @@ rule all:
 
 rule initialize_workspace:
     output:
-        results="data/results/workflow_initialized.txt",
-        report="reports/workflow_initialized.txt"
+        results="data/results/workflow_initialized.txt"
     log:
         "logs/initialize_workspace.log"
     shell:
@@ -105,7 +187,7 @@ rule initialize_workspace:
 
         {{
             echo "Add samples to workflow/config/samples.tsv."
-            echo "Bioinformatics applications run through Apptainer containers."
+            echo "Bioinformatics applications run through separate Mamba environments."
         }} > {output.report}
         """
 
@@ -117,21 +199,21 @@ rule fastp_pe:
     output:
         r1="data/intermediate/trimmed/{sample}_R1.fastq.gz",
         r2="data/intermediate/trimmed/{sample}_R2.fastq.gz",
-        html="data/results/qc/fastp/{sample}.html",
-        json="data/results/qc/fastp/{sample}.json",
-        done="data/intermediate/trimmed/{sample}.done"
+        html="data/results/{sample}/qc/fastp/{sample}.html",
+        json="data/results/{sample}/qc/fastp/{sample}.json",
+        done="data/intermediate/trimmed/{sample}_fastp_pe.done"
     log:
         "logs/trimmed/fastp_{sample}.log"
     threads: 8
     resources:
         mem_mb=12000
-    container:
-        container("fastp")
+    conda:
+        env("fastp")
     params:
         layout=lambda wc: SAMPLES[wc.sample]["layout"]
     shell:
         r"""
-        test "{params.layout}" = "PE"
+        test "{params.layout}" = "PE" -o "{params.layout}" = "HYBRID"
         fastp --thread {threads} --in1 {input.r1} --in2 {input.r2} --out1 {output.r1} --out2 {output.r2} --html {output.html} --json {output.json} > {log} 2>&1
         touch {output.done}
         """
@@ -142,16 +224,16 @@ rule fastp_se:
         r1=lambda wc: SAMPLES[wc.sample]["r1"]
     output:
         r1="data/intermediate/trimmed/{sample}_SE.fastq.gz",
-        html="data/results/qc/fastp/{sample}.html",
-        json="data/results/qc/fastp/{sample}.json",
-        done="data/intermediate/trimmed/{sample}.done"
+        html="data/results/{sample}/qc/fastp/{sample}.html",
+        json="data/results/{sample}/qc/fastp/{sample}.json",
+        done="data/intermediate/trimmed/{sample}_fastp_se.done"
     log:
         "logs/trimmed/fastp_{sample}.log"
     threads: 8
     resources:
         mem_mb=8000
-    container:
-        container("fastp")
+    conda:
+        env("fastp")
     params:
         layout=lambda wc: SAMPLES[wc.sample]["layout"]
     shell:
@@ -162,24 +244,66 @@ rule fastp_se:
         """
 
 
+rule porechop_ont:
+    input:
+        reads=lambda wc: SAMPLES[wc.sample]["long_reads"] if SAMPLES[wc.sample]["layout"] == "HYBRID" else SAMPLES[wc.sample]["r1"],
+        summary_script="workflow/scripts/fastq_qc_summary.py"
+    output:
+        reads="data/intermediate/trimmed/{sample}_ONT.fastq.gz",
+        summary="data/results/{sample}/qc/porechop/{sample}.json",
+        done="data/intermediate/trimmed/{sample}_porechop.done"
+    log:
+        "logs/porechop/porechop_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=16000
+    conda:
+        env("porechop")
+    params:
+        layout=lambda wc: SAMPLES[wc.sample]["layout"],
+        executable=lambda wc: tool("porechop")
+    shell:
+        r"""
+        test "{params.layout}" = "ONT" -o "{params.layout}" = "HYBRID"
+        mkdir -p data/intermediate/trimmed data/results/{wildcards.sample}/qc/porechop logs/porechop
+        PORECHOP="{params.executable}"
+        if [ ! -x "$PORECHOP" ]; then
+            PORECHOP="$(command -v porechop || true)"
+        fi
+        test -x "$PORECHOP" || \
+            (echo "Missing Porechop executable. Install ont-tools or allow Snakemake to create workflow/envs/porechop.yaml." >&2; exit 2)
+        "$PORECHOP" -i {input.reads} -o {output.reads} --threads {threads} > {log} 2>&1
+        test -s {output.reads}
+        {PYTHON} \
+            {input.summary_script} {input.reads} {output.reads} {output.summary} >> {log} 2>&1
+        touch {output.done}
+        """
+
+
 rule fastqc_r1:
     input:
         lambda wc: SAMPLES[wc.sample]["r1"]
     output:
-        html="data/results/qc/fastqc/{sample}_R1_fastqc.html",
-        zip="data/results/qc/fastqc/{sample}_R1_fastqc.zip"
+        html="data/results/{sample}/qc/fastqc/{sample}_R1_fastqc.html",
+        zip="data/results/{sample}/qc/fastqc/{sample}_R1_fastqc.zip"
     log:
         "logs/qc/fastqc_{sample}_R1.log"
     threads: 2
     resources:
         mem_mb=4000
-    container:
-        container("fastqc")
+    conda:
+        env("fastqc")
+    params:
+        link=lambda wc: (
+            f"data/intermediate/fastqc_inputs/{wc.sample}_R1.fastq.gz"
+            if SAMPLES[wc.sample]["r1"].endswith(".gz")
+            else f"data/intermediate/fastqc_inputs/{wc.sample}_R1.fastq"
+        )
     shell:
         r"""
-        mkdir -p data/intermediate/fastqc_inputs data/results/qc/fastqc
-        ln -sf "$(realpath {input})" data/intermediate/fastqc_inputs/{wildcards.sample}_R1.fastq.gz
-        fastqc --threads {threads} --outdir data/results/qc/fastqc data/intermediate/fastqc_inputs/{wildcards.sample}_R1.fastq.gz > {log} 2>&1
+        mkdir -p data/intermediate/fastqc_inputs data/results/{wildcards.sample}/qc/fastqc
+        ln -sf "$(realpath {input})" {params.link}
+        fastqc --threads {threads} --outdir data/results/{wildcards.sample}/qc/fastqc {params.link} > {log} 2>&1
         """
 
 
@@ -187,91 +311,591 @@ rule fastqc_r2:
     input:
         lambda wc: SAMPLES[wc.sample]["r2"]
     output:
-        html="data/results/qc/fastqc/{sample}_R2_fastqc.html",
-        zip="data/results/qc/fastqc/{sample}_R2_fastqc.zip"
+        html="data/results/{sample}/qc/fastqc/{sample}_R2_fastqc.html",
+        zip="data/results/{sample}/qc/fastqc/{sample}_R2_fastqc.zip"
     log:
         "logs/qc/fastqc_{sample}_R2.log"
     threads: 2
     resources:
         mem_mb=4000
-    container:
-        container("fastqc")
+    conda:
+        env("fastqc")
     params:
-        layout=lambda wc: SAMPLES[wc.sample]["layout"]
+        layout=lambda wc: SAMPLES[wc.sample]["layout"],
+        link=lambda wc: (
+            f"data/intermediate/fastqc_inputs/{wc.sample}_R2.fastq.gz"
+            if SAMPLES[wc.sample]["r2"].endswith(".gz")
+            else f"data/intermediate/fastqc_inputs/{wc.sample}_R2.fastq"
+        )
     shell:
         r"""
-        test "{params.layout}" = "PE"
-        mkdir -p data/intermediate/fastqc_inputs data/results/qc/fastqc
-        ln -sf "$(realpath {input})" data/intermediate/fastqc_inputs/{wildcards.sample}_R2.fastq.gz
-        fastqc --threads {threads} --outdir data/results/qc/fastqc data/intermediate/fastqc_inputs/{wildcards.sample}_R2.fastq.gz > {log} 2>&1
+        test "{params.layout}" = "PE" -o "{params.layout}" = "HYBRID"
+        mkdir -p data/intermediate/fastqc_inputs data/results/{wildcards.sample}/qc/fastqc
+        ln -sf "$(realpath {input})" {params.link}
+        fastqc --threads {threads} --outdir data/results/{wildcards.sample}/qc/fastqc {params.link} > {log} 2>&1
         """
 
 
 def unicycler_inputs(wildcards):
     if SAMPLES[wildcards.sample]["layout"] == "PE":
         return {
-            "r1": f"data/intermediate/trimmed/{wildcards.sample}_R1.fastq.gz",
-            "r2": f"data/intermediate/trimmed/{wildcards.sample}_R2.fastq.gz",
+            "r1": f"data/intermediate/subsampled/{wildcards.sample}_R1.fastq.gz",
+            "r2": f"data/intermediate/subsampled/{wildcards.sample}_R2.fastq.gz",
         }
-    return {"r1": f"data/intermediate/trimmed/{wildcards.sample}_SE.fastq.gz"}
+    if SAMPLES[wildcards.sample]["layout"] == "HYBRID":
+        return {
+            "r1": f"data/intermediate/subsampled/{wildcards.sample}_R1.fastq.gz",
+            "r2": f"data/intermediate/subsampled/{wildcards.sample}_R2.fastq.gz",
+            "long_reads": f"data/intermediate/subsampled/{wildcards.sample}_ONT.fastq.gz",
+        }
+    return {"r1": f"data/intermediate/subsampled/{wildcards.sample}_SE.fastq.gz"}
+
+
+def unicycler_read_args(wildcards):
+    layout = SAMPLES[wildcards.sample]["layout"]
+    if layout == "PE":
+        return f"-1 data/intermediate/subsampled/{wildcards.sample}_R1.fastq.gz -2 data/intermediate/subsampled/{wildcards.sample}_R2.fastq.gz"
+    if layout == "HYBRID":
+        return (
+            f"-1 data/intermediate/subsampled/{wildcards.sample}_R1.fastq.gz "
+            f"-2 data/intermediate/subsampled/{wildcards.sample}_R2.fastq.gz "
+            f"-l data/intermediate/subsampled/{wildcards.sample}_ONT.fastq.gz"
+        )
+    return f"-s data/intermediate/subsampled/{wildcards.sample}_SE.fastq.gz"
+
+
+rule rasusa_pe:
+    input:
+        r1="data/intermediate/trimmed/{sample}_R1.fastq.gz",
+        r2="data/intermediate/trimmed/{sample}_R2.fastq.gz"
+    output:
+        r1="data/intermediate/subsampled/{sample}_R1.fastq.gz",
+        r2="data/intermediate/subsampled/{sample}_R2.fastq.gz",
+        status="data/results/{sample}/qc/rasusa/{sample}_PE.tsv"
+    log:
+        "logs/rasusa/rasusa_{sample}.log"
+    threads: 4
+    resources:
+        mem_mb=8000
+    params:
+        layout=lambda wc: SAMPLES[wc.sample]["layout"],
+        executable=lambda wc: tool("rasusa"),
+        target=lambda wc: int(config["params"].get("target_reads_after_fastp", 3000000)),
+        seed=lambda wc: int(config["params"].get("rasusa_seed", 42))
+    shell:
+        r"""
+        test "{params.layout}" = "PE" -o "{params.layout}" = "HYBRID"
+        mkdir -p data/intermediate/subsampled data/results/{wildcards.sample}/qc/rasusa logs/rasusa
+        reads="$({PYTHON} -c 'import json,sys; print(json.load(open(sys.argv[1]))["summary"]["after_filtering"]["total_reads"])' data/results/{wildcards.sample}/qc/fastp/{wildcards.sample}.json)"
+        if [ "$reads" -gt "{params.target}" ]; then
+            pairs=$(({params.target} / 2))
+            env PATH="$(dirname {params.executable}):$PATH" {params.executable} reads {input.r1} {input.r2} \
+                --num "$pairs" --seed {params.seed} --output {output.r1} --output {output.r2} > {log} 2>&1
+            printf 'sample\tinput_reads\ttarget_reads\toutput_reads\taction\n{wildcards.sample}\t%s\t%s\t%s\tsubsampled\n' "$reads" "{params.target}" "{params.target}" > {output.status}
+        else
+            cp {input.r1} {output.r1}
+            cp {input.r2} {output.r2}
+            printf 'sample\tinput_reads\ttarget_reads\toutput_reads\taction\n{wildcards.sample}\t%s\t%s\t%s\tkept_all\n' "$reads" "{params.target}" "$reads" > {output.status}
+            echo "Rasusa skipped: $reads reads <= target {params.target}" > {log}
+        fi
+        """
+
+
+rule rasusa_se:
+    input:
+        r1="data/intermediate/trimmed/{sample}_SE.fastq.gz"
+    output:
+        r1="data/intermediate/subsampled/{sample}_SE.fastq.gz",
+        status="data/results/{sample}/qc/rasusa/{sample}_SE.tsv"
+    log:
+        "logs/rasusa/rasusa_{sample}.log"
+    threads: 4
+    resources:
+        mem_mb=8000
+    params:
+        executable=lambda wc: tool("rasusa"),
+        target=lambda wc: int(config["params"].get("target_reads_after_fastp", 3000000)),
+        seed=lambda wc: int(config["params"].get("rasusa_seed", 42))
+    shell:
+        r"""
+        mkdir -p data/intermediate/subsampled data/results/{wildcards.sample}/qc/rasusa logs/rasusa
+        reads="$({PYTHON} -c 'import json,sys; print(json.load(open(sys.argv[1]))["summary"]["after_filtering"]["total_reads"])' data/results/{wildcards.sample}/qc/fastp/{wildcards.sample}.json)"
+        if [ "$reads" -gt "{params.target}" ]; then
+            env PATH="$(dirname {params.executable}):$PATH" {params.executable} reads {input.r1} \
+                --num {params.target} --seed {params.seed} --output {output.r1} > {log} 2>&1
+            printf 'sample\tinput_reads\ttarget_reads\toutput_reads\taction\n{wildcards.sample}\t%s\t%s\t%s\tsubsampled\n' "$reads" "{params.target}" "{params.target}" > {output.status}
+        else
+            cp {input.r1} {output.r1}
+            printf 'sample\tinput_reads\ttarget_reads\toutput_reads\taction\n{wildcards.sample}\t%s\t%s\t%s\tkept_all\n' "$reads" "{params.target}" "$reads" > {output.status}
+            echo "Rasusa skipped: $reads reads <= target {params.target}" > {log}
+        fi
+        """
+
+
+rule rasusa_ont:
+    input:
+        reads="data/intermediate/trimmed/{sample}_ONT.fastq.gz"
+    output:
+        reads="data/intermediate/subsampled/{sample}_ONT.fastq.gz",
+        status="data/results/{sample}/qc/rasusa/{sample}_ONT.tsv"
+    log:
+        "logs/rasusa/rasusa_{sample}.log"
+    threads: 4
+    resources:
+        mem_mb=8000
+    params:
+        layout=lambda wc: SAMPLES[wc.sample]["layout"],
+        executable=lambda wc: tool("rasusa"),
+        genome_size=lambda wc: config["params"].get("ont_genome_size", "5m"),
+        coverage=lambda wc: float(config["params"].get("ont_target_coverage", 100)),
+        seed=lambda wc: int(config["params"].get("rasusa_seed", 42))
+    shell:
+        r"""
+        test "{params.layout}" = "ONT" -o "{params.layout}" = "HYBRID"
+        mkdir -p data/intermediate/subsampled data/results/{wildcards.sample}/qc/rasusa logs/rasusa
+        env PATH="$(dirname {params.executable}):$PATH" {params.executable} reads {input.reads} --genome-size {params.genome_size} --coverage {params.coverage} \
+            --seed {params.seed} --output {output.reads} > {log} 2>&1
+        test -s {output.reads}
+        printf 'sample\tinput_reads\ttarget_reads\toutput_reads\taction\n{wildcards.sample}\tNA\t%s\tNA\tsubsampled_by_coverage\n' \
+            "{params.coverage}x @ {params.genome_size}" > {output.status}
+        """
 
 
 rule unicycler:
     input:
         unpack(unicycler_inputs)
     output:
-        assembly="data/results/assemblies/{sample}/assembly.fasta"
+        assembly="data/results/{sample}/assembly/assembly.fasta"
     log:
         "logs/assemblies/unicycler_{sample}.log"
     threads: 16
     resources:
         mem_mb=64000
-    container:
-        container("unicycler")
+    conda:
+        env("unicycler")
     params:
-        reads=lambda wc: (
-            f"-1 data/intermediate/trimmed/{wc.sample}_R1.fastq.gz -2 data/intermediate/trimmed/{wc.sample}_R2.fastq.gz"
-            if SAMPLES[wc.sample]["layout"] == "PE"
-            else f"-s data/intermediate/trimmed/{wc.sample}_SE.fastq.gz"
-        )
+        reads=unicycler_read_args
     shell:
-        "unicycler {params.reads} -o data/results/assemblies/{wildcards.sample} -t {threads} > {log} 2>&1"
+        "rm -rf data/results/{wildcards.sample}/assembly && "
+        "unicycler {params.reads} -o data/results/{wildcards.sample}/assembly -t {threads} > {log} 2>&1"
+
+
+rule flye_ont:
+    input:
+        reads="data/intermediate/subsampled/{sample}_ONT.fastq.gz"
+    output:
+        assembly="data/results/{sample}/flye/assembly.fasta"
+    log:
+        "logs/flye/flye_{sample}.log"
+    threads: 24
+    resources:
+        mem_mb=128000
+    conda:
+        env("flye")
+    params:
+        layout=lambda wc: SAMPLES[wc.sample]["layout"],
+        executable=lambda wc: tool("flye"),
+        genome_size=lambda wc: config["params"].get("ont_genome_size", "5m"),
+        mode=lambda wc: config["params"].get("flye_ont_mode", "nano-hq"),
+        run_threads=lambda wc: int(config["params"].get("flye_threads", 1))
+    shell:
+        r"""
+        test "{params.layout}" = "ONT"
+        FLYE="{params.executable}"
+        if [ ! -x "$FLYE" ]; then
+            FLYE="$(command -v flye || true)"
+        fi
+        test -x "$FLYE" || \
+            (echo "Missing Flye executable. Install ont-tools or allow Snakemake to create workflow/envs/flye.yaml." >&2; exit 2)
+        if test -s data/results/{wildcards.sample}/flye/params.json; then
+            env FLYE_NO_MANAGER=1 PATH="$(dirname "$FLYE"):$PATH" "$FLYE" \
+                --{params.mode} {input.reads} --genome-size {params.genome_size} --resume \
+                --out-dir data/results/{wildcards.sample}/flye --threads {params.run_threads} > {log} 2>&1
+        else
+            env FLYE_NO_MANAGER=1 PATH="$(dirname "$FLYE"):$PATH" "$FLYE" \
+                --{params.mode} {input.reads} --genome-size {params.genome_size} \
+                --out-dir data/results/{wildcards.sample}/flye --threads {params.run_threads} > {log} 2>&1
+        fi
+        test -s {output.assembly}
+        """
+
+
+rule medaka_ont:
+    input:
+        reads="data/intermediate/subsampled/{sample}_ONT.fastq.gz",
+        assembly="data/results/{sample}/flye/assembly.fasta"
+    output:
+        consensus="data/results/{sample}/medaka/consensus.fasta"
+    log:
+        "logs/medaka/medaka_{sample}.log"
+    threads: 16
+    resources:
+        mem_mb=64000
+    conda:
+        env("medaka")
+    params:
+        layout=lambda wc: SAMPLES[wc.sample]["layout"],
+        executable=lambda wc: tool("medaka"),
+        model=lambda wc: config["params"].get("medaka_model", "r1041_e82_400bps_sup_v5.0.0")
+    shell:
+        r"""
+        test "{params.layout}" = "ONT"
+        rm -rf data/results/{wildcards.sample}/medaka
+        MEDAKA="{params.executable}"
+        if [ ! -x "$MEDAKA" ]; then
+            MEDAKA="$(command -v medaka_consensus || true)"
+        fi
+        test -x "$MEDAKA" || \
+            (echo "Missing Medaka executable. Install ont-tools or allow Snakemake to create workflow/envs/medaka.yaml." >&2; exit 2)
+        env PATH="$(dirname "$MEDAKA"):$PATH" "$MEDAKA" -i {input.reads} -d {input.assembly} \
+            -o data/results/{wildcards.sample}/medaka -t {threads} -m {params.model} > {log} 2>&1
+        test -s {output.consensus}
+        """
 
 
 rule quast:
     input:
         assembly=assembly
     output:
-        report="data/results/quast/{sample}/report.tsv"
+        report="data/results/{sample}/quast/report.tsv"
     log:
         "logs/quast/quast_{sample}.log"
     threads: 8
     resources:
         mem_mb=16000
-    container:
-        container("quast")
+    conda:
+        env("quast")
     shell:
-        "quast.py --threads {threads} --min-contig {config[params][min_contig_length]} -o data/results/quast/{wildcards.sample} {input.assembly} > {log} 2>&1"
+        "quast.py --threads {threads} --min-contig {config[params][min_contig_length]} -o data/results/{wildcards.sample}/quast {input.assembly} > {log} 2>&1"
 
 
-rule checkm2:
+rule mash:
     input:
         assembly=assembly
     output:
-        report="data/results/checkm2/{sample}/quality_report.tsv"
+        hits="data/results/{sample}/mash/top_hits.tsv"
     log:
-        "logs/checkm2/checkm2_{sample}.log"
-    threads: 16
+        "logs/mash/mash_{sample}.log"
+    threads: 8
     resources:
-        mem_mb=64000
-    container:
-        container("checkm2")
+        mem_mb=16000
     params:
-        database=lambda wc: db("checkm2")
+        executable=lambda wc: tool("mash"),
+        database=lambda wc: db("mash"),
+        top_hits=lambda wc: config["params"].get("mash_top_hits", 10)
     shell:
         r"""
-        test -d "{params.database}" || (echo "Missing CheckM2 database: {params.database}" >&2; exit 2)
-        checkm2 predict --threads {threads} --database_path {params.database} --input {input.assembly} --output-directory data/results/checkm2/{wildcards.sample} > {log} 2>&1
+        test -x "{params.executable}" || (echo "Missing Mash executable: {params.executable}" >&2; exit 2)
+        test -s "{params.database}" || (echo "Missing Mash database: {params.database}" >&2; exit 2)
+        mkdir -p data/results/{wildcards.sample}/mash
+        {params.executable} dist -p {threads} {params.database} {input.assembly} 2> {log} \
+            | sort -g -k3,3 \
+            | awk 'NR <= {params.top_hits}' \
+            > {output.hits}
+        """
+
+
+rule sourmash_sketch:
+    input:
+        assembly=assembly,
+        mash="data/results/{sample}/mash/top_hits.tsv"
+    output:
+        signature="data/results/{sample}/sourmash/{sample}.k31.sig.zip"
+    log:
+        "logs/sourmash/sketch_{sample}.log"
+    threads: 2
+    resources:
+        mem_mb=4000
+    params:
+        executable=lambda wc: tool("sourmash")
+    shell:
+        r"""
+        mkdir -p data/results/{wildcards.sample}/sourmash
+        {params.executable} sketch dna -p k=31,scaled=1000 \
+            --name {wildcards.sample} \
+            -o {output.signature} {input.assembly} > {log} 2>&1
+        """
+
+
+rule sourmash_gtdb:
+    input:
+        signature="data/results/{sample}/sourmash/{sample}.k31.sig.zip"
+    output:
+        gather="data/results/{sample}/sourmash/gather.csv",
+        annotated="data/results/{sample}/sourmash/gather.with-lineages.csv"
+    log:
+        "logs/sourmash/gtdb_{sample}.log"
+    threads: 4
+    resources:
+        mem_mb=8000
+    params:
+        executable=lambda wc: tool("sourmash"),
+        database=lambda wc: db("sourmash_gtdb"),
+        lineages=lambda wc: db("sourmash_gtdb_lineages")
+    shell:
+        r"""
+        test -s "{params.database}" || (echo "Missing sourmash GTDB database: {params.database}" >&2; exit 2)
+        test -s "{params.lineages}" || (echo "Missing sourmash GTDB lineages: {params.lineages}" >&2; exit 2)
+        if ! {params.executable} gather {input.signature} {params.database} \
+            --threshold-bp 10000 -o {output.gather} > {log} 2>&1; then
+            if grep -qi "No matches found" {log}; then
+                printf 'intersect_bp,f_orig_query,f_match,f_unique_to_query,name,lineage\n' > {output.gather}
+                printf 'intersect_bp,f_orig_query,f_match,f_unique_to_query,name,lineage\n' > {output.annotated}
+                echo "sourmash gather found no GTDB matches above threshold; wrote empty annotated output." >> {log}
+                exit 0
+            fi
+            exit 1
+        fi
+        if [ ! -s {output.gather} ]; then
+            printf 'intersect_bp,f_orig_query,f_match,f_unique_to_query,name,lineage\n' > {output.gather}
+            printf 'intersect_bp,f_orig_query,f_match,f_unique_to_query,name,lineage\n' > {output.annotated}
+            echo "sourmash gather produced no rows; wrote empty annotated output." >> {log}
+            exit 0
+        fi
+        {params.executable} tax annotate \
+            --gather-csv {output.gather} \
+            --taxonomy {params.lineages} \
+            --output-dir data/results/{wildcards.sample}/sourmash >> {log} 2>&1
+        annotated="$(find data/results/{wildcards.sample}/sourmash -maxdepth 1 -type f -name '*with-lineages.csv' | head -n 1)"
+        if [ -z "$annotated" ] || [ ! -s "$annotated" ]; then
+            printf 'intersect_bp,f_orig_query,f_match,f_unique_to_query,name,lineage\n' > {output.annotated}
+            echo "sourmash tax annotate produced no rows; wrote empty annotated output." >> {log}
+            exit 0
+        fi
+        if [ "$annotated" != "{output.annotated}" ]; then
+            cp "$annotated" {output.annotated}
+        fi
+        """
+
+
+rule busco:
+    input:
+        assembly=assembly
+    output:
+        summary="data/results/{sample}/busco/busco_summary.txt"
+    log:
+        "logs/busco/busco_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=16000
+    params:
+        executable=lambda wc: tool("busco"),
+        database=lambda wc: db("busco"),
+        lineage=lambda wc: config["params"].get("busco_lineage", "bacteria_odb10")
+    shell:
+        r"""
+        test -x "{params.executable}" || (echo "Missing BUSCO executable: {params.executable}" >&2; exit 2)
+        lineage="{params.lineage}"
+        if [ -d "{params.database}/lineages/{params.lineage}" ]; then
+            lineage="{params.database}/lineages/{params.lineage}"
+        elif [ -d "{params.database}/{params.lineage}" ]; then
+            lineage="{params.database}/{params.lineage}"
+        else
+            echo "Missing BUSCO lineage dataset: {params.database}/lineages/{params.lineage}" >&2
+            exit 2
+        fi
+        mkdir -p data/results/{wildcards.sample}/busco logs/busco
+        env PATH="$(dirname {params.executable}):$PATH" {params.executable} -i {input.assembly} -m genome -l "$lineage" --offline --download_path {params.database} --out_path data/results/{wildcards.sample}/busco -o {wildcards.sample} --cpu {threads} --force > {log} 2>&1
+        summary="$(find data/results/{wildcards.sample}/busco -type f -name 'short_summary*.txt' | head -n 1)"
+        test -s "$summary" || (echo "Missing BUSCO short summary" >&2; exit 2)
+        cp "$summary" {output.summary}
+        """
+
+
+rule plasmidfinder:
+    input:
+        assembly=assembly
+    output:
+        tsv="data/results/{sample}/plasmidfinder/{sample}.tsv"
+    log:
+        "logs/plasmidfinder/plasmidfinder_{sample}.log"
+    threads: 4
+    resources:
+        mem_mb=8000
+    conda:
+        env("abricate")
+    params:
+        executable=lambda wc: tool("abricate"),
+        database=lambda wc: db("plasmidfinder")
+    shell:
+        r"""
+        test -r "{params.database}/plasmidfinder/sequences" || (echo "Missing or unreadable PlasmidFinder database sequences in {params.database}/plasmidfinder" >&2; exit 2)
+        test -r "{params.database}/plasmidfinder/sequences.nin" -a -r "{params.database}/plasmidfinder/sequences.nsq" || (echo "Missing or unreadable PlasmidFinder BLAST indexes in {params.database}/plasmidfinder" >&2; exit 2)
+        exe="{params.executable}"
+        if ! test -x "$exe"; then
+            exe="$(command -v abricate || true)"
+        fi
+        test -x "$exe" || (echo "Missing ABRicate executable" >&2; exit 2)
+        mkdir -p data/results/{wildcards.sample}/plasmidfinder
+        env -u PERL5LIB PATH="$(dirname "$exe"):$PATH" \
+            "$exe" --datadir {params.database} --db plasmidfinder --threads {threads} {input.assembly} > {output.tsv} 2> {log}
+        """
+
+
+rule vfdb:
+    input:
+        assembly=assembly
+    output:
+        tsv="data/results/{sample}/vfdb/{sample}.tsv"
+    log:
+        "logs/vfdb/vfdb_{sample}.log"
+    threads: 4
+    resources:
+        mem_mb=8000
+    conda:
+        env("abricate")
+    params:
+        executable=lambda wc: tool("abricate"),
+        database=lambda wc: db("vfdb")
+    shell:
+        r"""
+        test -r "{params.database}/vfdb/sequences" || (echo "Missing or unreadable VFDB database sequences in {params.database}/vfdb" >&2; exit 2)
+        test -r "{params.database}/vfdb/sequences.nin" -a -r "{params.database}/vfdb/sequences.nsq" || (echo "Missing or unreadable VFDB BLAST indexes in {params.database}/vfdb" >&2; exit 2)
+        exe="{params.executable}"
+        if ! test -x "$exe"; then
+            exe="$(command -v abricate || true)"
+        fi
+        test -x "$exe" || (echo "Missing ABRicate executable" >&2; exit 2)
+        mkdir -p data/results/{wildcards.sample}/vfdb
+        env -u PERL5LIB PATH="$(dirname "$exe"):$PATH" \
+            "$exe" --datadir {params.database} --db vfdb --threads {threads} {input.assembly} > {output.tsv} 2> {log}
+        """
+
+
+rule kofamscan:
+    input:
+        proteins="data/results/{sample}/bakta/{sample}.faa"
+    output:
+        tsv="data/results/{sample}/kofamscan/{sample}.tsv"
+    log:
+        "logs/kofamscan/kofamscan_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=24000
+    conda:
+        env("kofamscan")
+    params:
+        executable=lambda wc: tool("kofamscan"),
+        database=lambda wc: db("kofamscan")
+    shell:
+        r"""
+        test -s "{params.database}/profiles/prokaryote.hal" || test -s "{params.database}/profiles/prokaryote.hmm" || test -d "{params.database}/profiles" || (echo "Missing KOfam profiles in {params.database}/profiles" >&2; exit 2)
+        test -s "{params.database}/ko_list" || (echo "Missing KOfam ko_list in {params.database}/ko_list" >&2; exit 2)
+        mkdir -p data/results/{wildcards.sample}/kofamscan
+        exe="{params.executable}"
+        if ! test -x "$exe"; then
+            exe="$(command -v exec_annotation || true)"
+        fi
+        if ! test -x "$exe"; then
+            for candidate in mamba_envs/kofamscan*/bin/exec_annotation snakemake_conda_envs/*/bin/exec_annotation .snakemake/conda/*/bin/exec_annotation; do
+                if test -x "$candidate"; then
+                    exe="$candidate"
+                    break
+                fi
+            done
+        fi
+        test -x "$exe" || (echo "Missing KOfamScan exec_annotation executable" >&2; exit 2)
+        env -u RUBYLIB PATH="$(dirname "$exe"):$PATH" \
+            "$exe" --cpu {threads} --profile {params.database}/profiles --ko-list {params.database}/ko_list --format mapper --no-report-unannotated {input.proteins} > {output.tsv} 2> {log}
+        """
+
+
+rule keggdecoder:
+    input:
+        kofam="data/results/{sample}/kofamscan/{sample}.tsv",
+        fallback_script="workflow/scripts/keggdecoder_kofam_fallback.py"
+    output:
+        completeness="data/results/{sample}/keggdecoder/pathway_completeness.tsv",
+        heatmap="data/results/{sample}/keggdecoder/pathway_completeness.svg"
+    log:
+        "logs/keggdecoder/keggdecoder_{sample}.log"
+    threads: 2
+    resources:
+        mem_mb=8000
+    conda:
+        env("functional-python")
+    params:
+        executable=lambda wc: tool("keggdecoder")
+    shell:
+        r"""
+        exe="{params.executable}"
+        if ! test -x "$exe"; then
+            exe="$(command -v KEGG-decoder || true)"
+        fi
+        rm -rf data/results/{wildcards.sample}/keggdecoder
+        mkdir -p data/results/{wildcards.sample}/keggdecoder
+        if ! test -x "$exe"; then
+            python {input.fallback_script} {input.kofam} {wildcards.sample} {output.completeness} {output.heatmap} > {log} 2>&1
+            echo "Missing KEGGDecoder executable; wrote KOfamScan-based fallback completeness." >> {log}
+            exit 0
+        fi
+        if ! env PATH="$(dirname "$exe"):$PATH" MPLCONFIGDIR="$PWD/.cache/matplotlib" \
+            "$exe" --input {input.kofam} \
+            --output data/results/{wildcards.sample}/keggdecoder/pathway_completeness.tsv \
+            --vizoption static > {log} 2>&1; then
+            if env PATH="$(dirname "$exe"):$PATH" MPLCONFIGDIR="$PWD/.cache/matplotlib" \
+                "$exe" --input {input.kofam} \
+                --output data/results/{wildcards.sample}/keggdecoder/pathway_completeness.tsv >> {log} 2>&1; then
+                python {input.fallback_script} {input.kofam} {wildcards.sample} {output.completeness} {output.heatmap} >> {log} 2>&1
+            else
+                python {input.fallback_script} {input.kofam} {wildcards.sample} {output.completeness} {output.heatmap} >> {log} 2>&1
+            fi
+            exit 0
+        fi
+        heatmap="$(find data/results/{wildcards.sample}/keggdecoder -maxdepth 1 -type f \( -name '*.svg' -o -name '*.pdf' -o -name '*.png' \) | head -n 1)"
+        test -s {output.completeness} || (echo "Missing KEGGDecoder pathway completeness table" >&2; exit 2)
+        test -s "$heatmap" || (echo "Missing KEGGDecoder heatmap" >&2; exit 2)
+        if [ "$heatmap" != "{output.heatmap}" ]; then
+            cp "$heatmap" {output.heatmap}
+        fi
+        """
+
+
+rule dbcan:
+    input:
+        proteins="data/results/{sample}/bakta/{sample}.faa",
+        assembly=assembly
+    output:
+        overview="data/results/{sample}/dbcan/overview.tsv"
+    log:
+        "logs/dbcan/dbcan_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=64000
+    conda:
+        env("dbcan")
+    params:
+        executable=lambda wc: tool("dbcan"),
+        database=lambda wc: db("dbcan"),
+        methods=lambda wc: config["params"].get("dbcan_methods", "diamond,hmm,dbCANsub")
+    shell:
+        r"""
+        exe="{params.executable}"
+        if ! test -x "$exe"; then
+            exe="$(command -v run_dbcan || true)"
+        fi
+        test -x "$exe" || (echo "Missing dbCAN executable" >&2; exit 2)
+        test -d "{params.database}" || (echo "Missing dbCAN database: {params.database}" >&2; exit 2)
+        rm -rf data/results/{wildcards.sample}/dbcan
+        export PATH="$(dirname "$exe"):$PATH"
+        "$exe" CAZyme_annotation --mode protein \
+            --input_raw_data {input.proteins} \
+            --output_dir data/results/{wildcards.sample}/dbcan \
+            --db_dir {params.database} \
+            --methods {params.methods} \
+            --threads {threads} > {log} 2>&1
+        test -s {output.overview} || (echo "Missing dbCAN overview.tsv" >&2; exit 2)
+        "$exe" easy_substrate --mode prok \
+            --input_raw_data {input.assembly} \
+            --output_dir data/results/{wildcards.sample}/dbcan/cgc \
+            --db_dir {params.database} \
+            --methods {params.methods} \
+            --threads {threads} >> {log} 2>&1
+        "$(dirname "$exe")/python" workflow/scripts/dbcan_cgc_report.py \
+            data/results/{wildcards.sample}/dbcan/cgc/cgc_standard_out_summary.tsv \
+            data/results/{wildcards.sample}/dbcan/cgc/substrate_prediction.tsv \
+            data/results/{wildcards.sample}/dbcan/cgc/synteny_pdf \
+            data/results/{wildcards.sample}/dbcan/cgc/cgc_with_substrates.tsv >> {log} 2>&1
         """
 
 
@@ -279,14 +903,14 @@ rule gtdbtk:
     input:
         assembly=assembly
     output:
-        summary="data/results/gtdbtk/{sample}/gtdbtk.bac120.summary.tsv"
+        summary="data/results/{sample}/gtdbtk/gtdbtk.bac120.summary.tsv"
     log:
         "logs/gtdbtk/gtdbtk_{sample}.log"
     threads: 24
     resources:
         mem_mb=96000
-    container:
-        container("gtdbtk")
+    conda:
+        env("gtdbtk")
     params:
         database=lambda wc: db("gtdbtk")
     shell:
@@ -295,7 +919,7 @@ rule gtdbtk:
         export GTDBTK_DATA_PATH="{params.database}"
         mkdir -p data/intermediate/gtdbtk/{wildcards.sample}
         cp {input.assembly} data/intermediate/gtdbtk/{wildcards.sample}/{wildcards.sample}.fna
-        gtdbtk classify_wf --genome_dir data/intermediate/gtdbtk/{wildcards.sample} --out_dir data/results/gtdbtk/{wildcards.sample} --extension fna --cpus {threads} > {log} 2>&1
+        gtdbtk classify_wf --genome_dir data/intermediate/gtdbtk/{wildcards.sample} --out_dir data/results/{wildcards.sample}/gtdbtk --extension fna --cpus {threads} > {log} 2>&1
         """
 
 
@@ -303,20 +927,137 @@ rule bakta:
     input:
         assembly=assembly
     output:
-        gff="data/results/bakta/{sample}/{sample}.gff3"
+        gff="data/results/{sample}/bakta/{sample}.gff3",
+        faa="data/results/{sample}/bakta/{sample}.faa",
+        tsv="data/results/{sample}/bakta/{sample}.tsv",
+        txt="data/results/{sample}/bakta/{sample}.txt",
+        png="data/results/{sample}/bakta/{sample}.png",
+        fna="data/results/{sample}/bakta/{sample}.fna"
     log:
         "logs/bakta/bakta_{sample}.log"
     threads: 16
     resources:
         mem_mb=64000
-    container:
-        container("bakta")
     params:
-        database=lambda wc: db("bakta")
+        executable=lambda wc: tool("bakta"),
+        database=lambda wc: db("bakta"),
+        trna_wrapper=lambda wc: str(Path(workflow.basedir).joinpath("scripts", "tRNAscan-SE"))
     shell:
         r"""
+        test -x "{params.executable}" || (echo "Missing Bakta executable: {params.executable}" >&2; exit 2)
         test -d "{params.database}" || (echo "Missing Bakta database: {params.database}" >&2; exit 2)
-        bakta --db {params.database} --threads {threads} --genus "Bacteria" --prefix {wildcards.sample} --output data/results/bakta/{wildcards.sample} {input.assembly} > {log} 2>&1
+        rm -rf data/results/{wildcards.sample}/bakta
+        bakta_bin="$(dirname {params.executable})"
+        bakta_env="$(dirname "$bakta_bin")"
+        bakta_trna_module="$bakta_env/lib/python"*"/site-packages/bakta/features/t_rna.py"
+        BAKTA_TRNA_MODULE="$bakta_trna_module" "$bakta_bin/python" - <<'PY'
+from pathlib import Path
+import glob
+import os
+
+files = glob.glob(os.environ.get('BAKTA_TRNA_MODULE', ''))
+if files:
+    p = Path(files[0])
+    text = p.read_text()
+    text = text.replace(
+        "        'tRNAscan-SE',",
+        "        __import__('os').environ.get('BAKTA_TRNASCAN_SE', 'tRNAscan-SE'),",
+    )
+    text = text.replace(
+        "        env=cfg.env,\n",
+        "        env=dict(cfg.env, TMPDIR='/tmp', **{{k: v for k, v in __import__('os').environ.items() if k in {{'PATH', 'PERL5LIB', 'TRNASCAN_SE_REAL'}}}}),\n",
+    )
+    text = text.replace(
+        "        env=dict(cfg.env, **{{k: v for k, v in __import__('os').environ.items() if k in {{'PATH', 'PERL5LIB', 'TRNASCAN_SE_REAL'}}}}),\n",
+        "        env=dict(cfg.env, TMPDIR='/tmp', **{{k: v for k, v in __import__('os').environ.items() if k in {{'PATH', 'PERL5LIB', 'TRNASCAN_SE_REAL'}}}}),\n",
+    )
+    text = text.replace(
+        "        str(sequences_path)\n",
+        "        str(sequences_path.resolve())\n",
+    )
+    text = text.replace(
+        "    txt_output_path = cfg.tmp_path.joinpath('trna.tsv')\n",
+        "    txt_output_path = cfg.tmp_path.joinpath('trna.tsv').resolve()\n",
+    )
+    text = text.replace(
+        "    fasta_output_path = cfg.tmp_path.joinpath('trna.fasta')\n",
+        "    fasta_output_path = cfg.tmp_path.joinpath('trna.fasta').resolve()\n",
+    )
+    text = text.replace(
+        "        cwd=str(cfg.tmp_path),\n",
+        "        cwd=str(cfg.tmp_path.resolve()),\n",
+    )
+    text = text.replace(
+        "        log.debug('stdout=\\'%s\\', stderr=\\'%s\\'', proc.stdout, proc.stderr)\n",
+        "        log.warning('stdout=\\'%s\\', stderr=\\'%s\\'', proc.stdout, proc.stderr)\n",
+    )
+    p.write_text(text)
+PY
+        env PATH="$(dirname {params.trna_wrapper}):$bakta_bin:$PATH" \
+            TMPDIR="/tmp" \
+            BAKTA_TRNASCAN_SE="{params.trna_wrapper}" \
+            TRNASCAN_SE_REAL="$bakta_bin/tRNAscan-SE" \
+            PERL5LIB="$bakta_env/lib/perl5/core_perl" \
+            "{params.executable}" --db {params.database} --threads {threads} --genus "Bacteria" --prefix {wildcards.sample} --output data/results/{wildcards.sample}/bakta --force --skip-sorf {input.assembly} > {log} 2>&1 || (
+                status=$?
+                echo "Bakta full annotation failed with exit code $status; retrying once with --skip-trna because tRNAscan-SE can be unstable in Docker." >> {log}
+                rm -rf data/results/{wildcards.sample}/bakta
+                env PATH="$(dirname {params.trna_wrapper}):$bakta_bin:$PATH" \
+                    TMPDIR="/tmp" \
+                    BAKTA_TRNASCAN_SE="{params.trna_wrapper}" \
+                    TRNASCAN_SE_REAL="$bakta_bin/tRNAscan-SE" \
+                    PERL5LIB="$bakta_env/lib/perl5/core_perl" \
+                    "{params.executable}" --db {params.database} --threads {threads} --genus "Bacteria" --prefix {wildcards.sample} --output data/results/{wildcards.sample}/bakta --force --skip-sorf --skip-trna {input.assembly} >> {log} 2>&1
+            )
+        """
+
+
+rule pgmdb:
+    input:
+        bakta="data/results/{sample}/bakta/{sample}.tsv",
+        eggnog="data/results/{sample}/eggnog/{sample}.emapper.annotations",
+        database=lambda wc: db("pgmdb"),
+        script="workflow/scripts/find_probiotic_markers.py"
+    output:
+        hits="data/results/{sample}/pgmdb/hits.tsv",
+        summary="data/results/{sample}/pgmdb/summary.tsv"
+    log:
+        "logs/pgmdb/pgmdb_{sample}.log"
+    shell:
+        r"""
+        mkdir -p data/results/{wildcards.sample}/pgmdb
+        {PYTHON} \
+            {input.script} {input.database} {input.bakta} {input.eggnog} {output.hits} {output.summary} > {log} 2>&1
+        """
+
+
+rule pgmdb_functional_potential:
+    input:
+        database=lambda wc: db("pgmdb"),
+        hits="data/results/{sample}/pgmdb/hits.tsv",
+        script="workflow/scripts/plot_pgmdb_functional_potential.py"
+    output:
+        table="data/results/{sample}/pgmdb/pgmdb_functional_potential.tsv",
+        png="data/results/{sample}/pgmdb/pgmdb_functional_potential.png"
+    log:
+        "logs/pgmdb/pgmdb_functional_potential_{sample}.log"
+    conda:
+        env("functional-python")
+    shell:
+        r"""
+        export MPLCONFIGDIR="$PWD/.cache/matplotlib"
+        py="mamba_envs/functional-python/bin/python"
+        if ! test -x "$py"; then
+            py="mamba_envs/goprobioticprofiler/bin/python"
+        fi
+        if ! test -x "$py"; then
+            py="$(command -v python || true)"
+        fi
+        test -x "$py" || (echo "Missing Python for PGMDB functional potential plot" >&2; exit 2)
+        "$py" {input.script} \
+            {input.database} {input.hits} {output.table} {output.png} > {log} 2>&1
+        test -s {output.table}
+        test -s {output.png}
         """
 
 
@@ -324,14 +1065,14 @@ rule amrfinderplus:
     input:
         assembly=assembly
     output:
-        tsv="data/results/amrfinder/{sample}.tsv"
+        tsv="data/results/{sample}/amrfinder/{sample}.tsv"
     log:
         "logs/amrfinder/amrfinder_{sample}.log"
     threads: 8
     resources:
         mem_mb=16000
-    container:
-        container("amrfinderplus")
+    conda:
+        env("amrfinderplus")
     params:
         database=lambda wc: db("amrfinderplus")
     shell:
@@ -341,29 +1082,126 @@ rule amrfinderplus:
         """
 
 
-rule bagel4:
+rule abricate:
     input:
         assembly=assembly
     output:
-        done="data/results/bagel4/{sample}/bagel4.done"
+        card="data/results/{sample}/abricate/{sample}_card.tsv",
+        megares="data/results/{sample}/abricate/{sample}_megares.tsv"
+    log:
+        "logs/abricate/abricate_{sample}.log"
+    threads: 8
+    resources:
+        mem_mb=16000
+    conda:
+        env("abricate")
+    params:
+        executable=lambda wc: tool("abricate")
+    shell:
+        r"""
+        exe="{params.executable}"
+        if ! test -x "$exe"; then
+            exe="$(command -v abricate || true)"
+        fi
+        test -x "$exe" || (echo "Missing ABRicate executable" >&2; exit 2)
+        export PATH="$(dirname "$exe"):$PATH"
+        mkdir -p data/results/{wildcards.sample}/abricate
+        env -u PERL5LIB "$exe" --db card {input.assembly} > {output.card} 2>> {log}
+        env -u PERL5LIB "$exe" --db megares {input.assembly} > {output.megares} 2>> {log}
+        """
+
+
+rule bagel4:
+    input:
+        assembly=assembly,
+        bakta="data/results/{sample}/bakta/{sample}.tsv",
+        script="workflow/scripts/summarize_bagel4.py",
+        fallback_script="workflow/scripts/bagel4_tblastn_fallback.py",
+        draw_script="workflow/scripts/draw_bagel4_aoi.py"
+    output:
+        summary="data/results/{sample}/bagel4/bacteriocin_clusters.tsv",
+        done="data/results/{sample}/bagel4/bagel4.done"
     log:
         "logs/bagel4/bagel4_{sample}.log"
     threads: 8
     resources:
         mem_mb=16000
+    conda:
+        env("bagel4")
     params:
         run=lambda wc: str(config["params"]["run_bagel4"]).lower(),
-        image=lambda wc: container("bagel4")
+        database=lambda wc: db("bagel4"),
+        env_dir="mamba_envs/bagel4",
+        context=lambda wc: int(config["params"].get("bagel4_context_size", 20000))
     shell:
         r"""
-        mkdir -p data/results/bagel4/{wildcards.sample}
+        rm -rf data/results/{wildcards.sample}/bagel4
+        mkdir -p data/results/{wildcards.sample}/bagel4/session/queryfolder
         if [ "{params.run}" != "true" ]; then
-            echo "BAGEL4 skipped. Configure app_containers/bagel4.manual.sif and set params.run_bagel4=true." > {log}
+            printf 'AOI\tstart\tend\tclass\tfullname\n' > {output.summary}
+            echo "BAGEL4 skipped by configuration." > {log}
             touch {output.done}
             exit 0
         fi
-        test -s "{params.image}" || (echo "Missing BAGEL4 container: {params.image}" >&2; exit 2)
-        apptainer exec --cleanenv --unsquash --bind /home/vebaev/codex:/home/vebaev/codex {params.image} bagel4 -i {input.assembly} -o data/results/bagel4/{wildcards.sample} -t {threads} > {log} 2>&1
+        test -x "{params.database}/bagel4_wrapper.pl" || (echo "BAGEL4 is not installed. Run: workflow/scripts/install_databases.sh bagel4" >&2; exit 2)
+        perl="{params.env_dir}/bin/perl"
+        blastp="{params.env_dir}/bin/blastp"
+        tblastn="{params.env_dir}/bin/tblastn"
+        if ! test -x "$perl"; then
+            perl="$(command -v perl || true)"
+        fi
+        if ! test -x "$blastp"; then
+            blastp="$(command -v blastp || true)"
+        fi
+        if ! test -x "$tblastn"; then
+            tblastn="$(command -v tblastn || true)"
+        fi
+        test -x "$perl" || (echo "Missing BAGEL4 perl executable" >&2; exit 2)
+        test -x "$blastp" || (echo "Missing BLAST+ blastp for BAGEL4" >&2; exit 2)
+        test -x "$tblastn" || (echo "Missing BLAST+ tblastn for BAGEL4 fallback" >&2; exit 2)
+        bagel_env_bin="$(dirname "$perl")"
+        runtime_db="$PWD/data/results/{wildcards.sample}/bagel4/runtime_db"
+        rm -rf "$runtime_db"
+        cp -a "{params.database}" "$runtime_db"
+        chmod -R u+rwX "$runtime_db"
+        find "$runtime_db" -type f \( -name '*.pl' -o -name '*.pm' -o -name '*.conf' -o -name '*.txt' \) -print0 |
+            xargs -0 sed -i \
+                -e "s#/home/vebaev/codex#$PWD#g" \
+                -e "s#^glimmerpath *=.*#glimmerpath = $bagel_env_bin#" \
+                -e "s#^hmmsearch *=.*#hmmsearch = $bagel_env_bin#"
+        find "$runtime_db" -maxdepth 1 -type f -name '*.pl' -exec chmod +x {{}} +
+        cp {input.assembly} data/results/{wildcards.sample}/bagel4/session/queryfolder/{wildcards.sample}.fna
+        env PATH="$(dirname "$perl"):$(dirname "$blastp"):$PATH" PERL5LIB="$runtime_db/lib" \
+            "$perl" "$runtime_db/bagel4_wrapper.pl" \
+            -s "$PWD/data/results/{wildcards.sample}/bagel4/session" \
+            -query "$PWD/data/results/{wildcards.sample}/bagel4/session/queryfolder" \
+            -webserver 1 -r '*.fna' > {log} 2>&1
+        if grep -Eq 'Can.t exec|No such file or directory|command not found|BEGIN failed' {log}; then
+            echo "BAGEL4 reported a missing executable or dependency; see {log}" >&2
+            exit 2
+        fi
+        {PYTHON} \
+            {input.script} data/results/{wildcards.sample}/bagel4/session {output.summary}
+        if [ "$(wc -l < {output.summary})" -le 1 ]; then
+            {PYTHON} \
+                {input.fallback_script} {input.assembly} "$runtime_db" \
+                "$tblastn" {output.summary} {params.context}
+        fi
+        mkdir -p data/results/{wildcards.sample}/bagel4/graphics
+        {PYTHON} \
+            {input.draw_script} {input.bakta} {output.summary} data/results/{wildcards.sample}/bagel4/graphics
+        for svg in data/results/{wildcards.sample}/bagel4/graphics/*.svg; do
+            [ -e "$svg" ] || continue
+            rsvg="$(dirname {PYTHON})/rsvg-convert"
+            if [ ! -x "$rsvg" ]; then
+                rsvg="$(command -v rsvg-convert || true)"
+            fi
+            if [ -x "$rsvg" ]; then
+                "$rsvg" -o "${{svg%.svg}}.png" "$svg"
+            else
+                echo "rsvg-convert unavailable; keeping BAGEL4 SVG graphic only for $svg" >> {log}
+            fi
+        done
         touch {output.done}
         """
 
@@ -372,17 +1210,74 @@ rule antismash:
     input:
         assembly=assembly
     output:
-        html="data/results/antismash/{sample}/index.html"
+        html="data/results/{sample}/antismash/index.html",
+        regions="data/results/{sample}/antismash/{sample}_regions.tsv"
     log:
         "logs/antismash/antismash_{sample}.log"
     threads: 16
     resources:
         mem_mb=64000
-    container:
-        container("antismash")
+    conda:
+        env("antismash")
+    params:
+        database=lambda wc: db("antismash")
     shell:
         r"""
-        antismash --taxon bacteria --cpus {threads} --output-dir data/results/antismash/{wildcards.sample} {input.assembly} > {log} 2>&1
+        test -d "{params.database}" || (echo "Missing antiSMASH database: {params.database}" >&2; exit 2)
+        rm -rf data/results/{wildcards.sample}/antismash
+        antismash --databases {params.database} --taxon bacteria --genefinding-tool prodigal --cpus {threads} --output-dir data/results/{wildcards.sample}/antismash {input.assembly} --output-basename {wildcards.sample} > {log} 2>&1
+        test -s {output.html} || (echo "Missing antiSMASH index.html" >&2; exit 2)
+        python workflow/scripts/antismash_regions.py data/results/{wildcards.sample}/antismash/regions.js {output.regions} >> {log} 2>&1
+        test -s {output.regions} || (echo "Missing antiSMASH region summary" >&2; exit 2)
+        shopt -s nullglob
+        for gbk in data/results/{wildcards.sample}/antismash/*.region*.gbk; do
+            MPLCONFIGDIR="$PWD/.cache/matplotlib" python \
+                workflow/scripts/draw_antismash_genes.py "$gbk" "${{gbk%.gbk}}.png" >> {log} 2>&1
+        done
+        """
+
+
+rule pycirclize_genome_map:
+    input:
+        assembly="data/results/{sample}/bakta/{sample}.fna",
+        gff="data/results/{sample}/bakta/{sample}.gff3",
+        card="data/results/{sample}/abricate/{sample}_card.tsv",
+        megares="data/results/{sample}/abricate/{sample}_megares.tsv",
+        antismash="data/results/{sample}/antismash/index.html",
+        bagel="data/results/{sample}/bagel4/bacteriocin_clusters.tsv",
+        dbcan="data/results/{sample}/dbcan/overview.tsv",
+        pgmdb="data/results/{sample}/pgmdb/hits.tsv",
+        fastani="data/results/{sample}/fastani/{sample}_fastani.tsv",
+        fastani_refs="data/results/{sample}/fastani/refs/references.tsv",
+        script="workflow/scripts/plot_bacterial_genome_map.py"
+    output:
+        png="data/results/{sample}/genome_map/{sample}_genome_map.png",
+        svg="data/results/{sample}/genome_map/{sample}_genome_map.svg"
+    log:
+        "logs/pycirclize/pycirclize_{sample}.log"
+    resources:
+        mem_mb=8000
+    conda:
+        env("functional-python")
+    shell:
+        r"""
+        root="${{PROBEAT_ROOT:-$PWD}}"
+        mkdir -p data/results/{wildcards.sample}/genome_map
+        export MPLCONFIGDIR="$root/.cache/matplotlib"
+        py="$root/mamba_envs/functional-python/bin/python"
+        if ! test -x "$py"; then
+            py="$root/mamba_envs/pycirclize/bin/python"
+        fi
+        if ! test -x "$py"; then
+            py="$(command -v python || true)"
+        fi
+        test -x "$py" || (echo "Missing Python for pyCirclize genome map" >&2; exit 2)
+        "$py" {input.script} {wildcards.sample} {input.assembly} {input.gff} \
+            {input.card} {input.megares} data/results/{wildcards.sample}/antismash \
+            {input.bagel} {input.dbcan} {input.pgmdb} {input.fastani} {input.fastani_refs} \
+            {output.png} {output.svg} > {log} 2>&1
+        test -s {output.png}
+        test -s {output.svg}
         """
 
 
@@ -390,17 +1285,426 @@ rule mobsuite:
     input:
         assembly=assembly
     output:
-        report="data/results/mobsuite/{sample}/mobtyper_results.txt"
+        contigs="data/results/{sample}/mobsuite/contig_report.txt",
+        plasmids="data/results/{sample}/mobsuite/mobtyper_results.txt"
     log:
-        "logs/mobsuite/mobtyper_{sample}.log"
+        "logs/mobsuite/mob_recon_{sample}.log"
     threads: 8
     resources:
         mem_mb=32000
-    container:
-        container("mobsuite")
+    conda:
+        env("mobsuite")
+    params:
+        database=lambda wc: db("mobsuite")
     shell:
         r"""
-        mob_typer --infile {input.assembly} --outdir data/results/mobsuite/{wildcards.sample} --num_threads {threads} > {log} 2>&1
+        test -d "{params.database}" || (echo "Missing MOB-suite database: {params.database}" >&2; exit 2)
+        exe="mamba_envs/mobsuite/bin/mob_recon"
+        if ! test -x "$exe"; then
+            exe="$(command -v mob_recon || true)"
+        fi
+        test -x "$exe" || (echo "Missing MOB-recon executable" >&2; exit 2)
+        rm -rf data/results/{wildcards.sample}/mobsuite
+        export PATH="$(dirname "$exe"):$PATH"
+        "$exe" --infile {input.assembly} \
+            --outdir data/results/{wildcards.sample}/mobsuite \
+            --sample_id {wildcards.sample} --database_directory {params.database} \
+            --num_threads {threads} --force > {log} 2>&1
+        if [ ! -s {output.plasmids} ]; then
+            printf '%s\n' 'sample_id	num_contigs	size	gc	md5	rep_type(s)	rep_type_accession(s)	relaxase_type(s)	relaxase_type_accession(s)	mpf_type	mpf_type_accession(s)	orit_type(s)	orit_accession(s)	predicted_mobility	mash_nearest_neighbor	mash_neighbor_distance	mash_neighbor_identification	primary_cluster_id	secondary_cluster_id	predicted_host_range_overall_rank	predicted_host_range_overall_name	observed_host_range_ncbi_rank	observed_host_range_ncbi_name	reported_host_range_lit_rank	reported_host_range_lit_name	associated_pmid(s)' > {output.plasmids}
+        fi
+        test -s {output.contigs}
+        test -s {output.plasmids}
+        """
+
+
+rule genomad:
+    input:
+        assembly=assembly
+    output:
+        plasmid_summary="data/results/{sample}/genomad/assembly_summary/assembly_plasmid_summary.tsv",
+        virus_summary="data/results/{sample}/genomad/assembly_summary/assembly_virus_summary.tsv"
+    log:
+        "logs/genomad/genomad_{sample}.log"
+    threads: 16
+    resources:
+        mem_mb=32000
+    conda:
+        env("genomad")
+    params:
+        executable=lambda wc: tool("genomad"),
+        database=lambda wc: db("genomad")
+    shell:
+        r"""
+        exe="{params.executable}"
+        if ! test -x "$exe"; then
+            exe="$(command -v genomad || true)"
+        fi
+        test -x "$exe" || (echo "Missing geNomad executable" >&2; exit 2)
+        test -d "{params.database}" || (echo "Missing geNomad database: {params.database}" >&2; exit 2)
+        export PATH="$(dirname "$exe"):$PATH"
+        rm -rf data/results/{wildcards.sample}/genomad
+        "$exe" end-to-end {input.assembly} data/results/{wildcards.sample}/genomad {params.database} --cleanup --threads {threads} > {log} 2>&1
+        summary_dir="$(find data/results/{wildcards.sample}/genomad -mindepth 1 -maxdepth 1 -type d -name '*_summary' | head -n 1)"
+        test -n "$summary_dir" || (echo "Missing geNomad summary directory" >&2; exit 2)
+        mkdir -p data/results/{wildcards.sample}/genomad/assembly_summary
+        plasmid_summary="$(find "$summary_dir" -maxdepth 1 -type f -name '*_plasmid_summary.tsv' | head -n 1)"
+        virus_summary="$(find "$summary_dir" -maxdepth 1 -type f -name '*_virus_summary.tsv' | head -n 1)"
+        if [ -n "$plasmid_summary" ] && [ -s "$plasmid_summary" ]; then
+            if [ "$(readlink -f "$plasmid_summary")" != "$(readlink -f {output.plasmid_summary})" ]; then
+                cp "$plasmid_summary" {output.plasmid_summary}
+            fi
+        else
+            printf '%s\n' 'seq_name	length	topology	plasmid_score	fdr	n_hallmarks	marker_enrichment' > {output.plasmid_summary}
+        fi
+        if [ -n "$virus_summary" ] && [ -s "$virus_summary" ]; then
+            if [ "$(readlink -f "$virus_summary")" != "$(readlink -f {output.virus_summary})" ]; then
+                cp "$virus_summary" {output.virus_summary}
+            fi
+        else
+            printf '%s\n' 'seq_name	length	topology	virus_score	fdr	n_hallmarks	marker_enrichment' > {output.virus_summary}
+        fi
+        test -s {output.plasmid_summary} || (echo "Missing geNomad plasmid summary" >&2; exit 2)
+        test -s {output.virus_summary} || (echo "Missing geNomad virus summary" >&2; exit 2)
+        """
+
+
+rule eggnog:
+    input:
+        proteins="data/results/{sample}/bakta/{sample}.faa"
+    output:
+        annotations="data/results/{sample}/eggnog/{sample}.emapper.annotations"
+    log:
+        "logs/eggnog/eggnog_{sample}.log"
+    threads: 36
+    resources:
+        mem_mb=128000
+    conda:
+        env("eggnog")
+    params:
+        executable=lambda wc: tool("eggnog"),
+        database=lambda wc: db("eggnog")
+    shell:
+        r"""
+        exe="{params.executable}"
+        if ! test -x "$exe"; then
+            exe="$(command -v emapper.py || true)"
+        fi
+        test -x "$exe" || (echo "Missing eggNOG-mapper executable" >&2; exit 2)
+        test -d "{params.database}" || (echo "Missing eggNOG database: {params.database}" >&2; exit 2)
+        mkdir -p data/results/{wildcards.sample}/eggnog tmp
+        export TMPDIR=$(realpath tmp)
+        export PATH="$(dirname "$exe"):$PATH"
+        "$exe" -m diamond -i {input.proteins} --itype proteins \
+            --data_dir {params.database} \
+            -o {wildcards.sample} --output_dir data/results/{wildcards.sample}/eggnog \
+            --temp_dir tmp \
+            --cpu {threads} --override --no_annot --dmnd_iterate no > {log} 2>&1
+        test -s data/results/{wildcards.sample}/eggnog/{wildcards.sample}.emapper.seed_orthologs || (echo "Missing seed orthologs" >&2; exit 2)
+        "$exe" --annotate_hits_table data/results/{wildcards.sample}/eggnog/{wildcards.sample}.emapper.seed_orthologs \
+            --data_dir {params.database} \
+            -o {wildcards.sample} --output_dir data/results/{wildcards.sample}/eggnog \
+            --temp_dir tmp \
+            --cpu {threads} --override >> {log} 2>&1
+        test -s {output.annotations} || (echo "Missing eggNOG annotations" >&2; exit 2)
+        "$(dirname "$exe")/python" workflow/scripts/plot_transport_radar.py {output.annotations} data/results/{wildcards.sample}/eggnog/{wildcards.sample}_transport.tsv >> {log} 2>&1
+        "$(dirname "$exe")/python" workflow/scripts/export_ec_table.py {output.annotations} data/results/{wildcards.sample}/eggnog/{wildcards.sample}_ec.tsv >> {log} 2>&1
+        MPLCONFIGDIR="$PWD/.cache/matplotlib" "$(dirname "$exe")/python" workflow/scripts/plot_cog_radar.py {output.annotations} \
+            data/results/{wildcards.sample}/eggnog/{wildcards.sample}_cog_radar.png >> {log} 2>&1
+        """
+
+
+rule gut_brain_markers:
+    input:
+        database="data/databases/gut_brain_axis_marker_database.tsv",
+        bakta="data/results/{sample}/bakta/{sample}.tsv",
+        eggnog="data/results/{sample}/eggnog/{sample}.emapper.annotations",
+        script="workflow/scripts/gut_brain_markers.py"
+    output:
+        markers="data/results/{sample}/gut_brain_markers.tsv"
+    log:
+        "logs/eggnog/gut_brain_markers_{sample}.log"
+    shell:
+        r"""
+        {PYTHON} \
+            {input.script} {input.database} {input.bakta} {input.eggnog} {output.markers} > {log} 2>&1
+        test -s {output.markers} || (echo "Missing gut-brain marker results" >&2; exit 2)
+        """
+
+
+rule kegganog:
+    input:
+        annotations="data/results/{sample}/eggnog/{sample}.emapper.annotations"
+    output:
+        pathways="data/results/{sample}/kegganog/{sample}_pathways.tsv"
+    log:
+        "logs/kegganog/kegganog_{sample}.log"
+    conda:
+        env("functional-python")
+    shell:
+        r"""
+        test -s "{input.annotations}" || (echo "Missing eggNOG annotations" >&2; exit 2)
+        rm -rf data/results/{wildcards.sample}/kegganog
+        exe="mamba_envs/functional-python/bin/KEGGaNOG"
+        if ! test -x "$exe"; then
+            exe="mamba_envs/kegganog/bin/KEGGaNOG"
+        fi
+        if ! test -x "$exe"; then
+            exe="$(command -v KEGGaNOG || true)"
+        fi
+        if ! test -x "$exe"; then
+            exe="$(find snakemake_conda_envs -path '*/bin/KEGGaNOG' -type f -perm -111 2>/dev/null | head -n 1)"
+        fi
+        if ! test -x "$exe"; then
+            mkdir -p data/results/{wildcards.sample}/kegganog
+            printf 'Sample\n{wildcards.sample}\n' > {output.pathways}
+            echo "KEGGaNOG executable unavailable; wrote empty pathway fallback." > {log}
+            python workflow/scripts/filter_kegganog_zeros.py data/results/{wildcards.sample}/kegganog/{wildcards.sample}_pathways.tsv >> {log} 2>&1
+            python workflow/scripts/plot_kegganog_bars.py data/results/{wildcards.sample}/kegganog/{wildcards.sample}_pathways_filtered.tsv >> {log} 2>&1
+            exit 0
+        fi
+        export PATH="$(dirname "$exe"):$PATH"
+        if ! "$exe" -i {input.annotations} -o data/results/{wildcards.sample}/kegganog \
+            -n {wildcards.sample} -g --overwrite > {log} 2>&1; then
+            if grep -Eq "Can only use \\.str accessor|No objects to concatenate|EmptyDataError" {log}; then
+                mkdir -p data/results/{wildcards.sample}/kegganog
+                printf 'Sample\n{wildcards.sample}\n' > {output.pathways}
+                echo "KEGGaNOG found no usable KO annotations; wrote empty pathway fallback." >> {log}
+            else
+                exit 1
+            fi
+        fi
+        if [ ! -s {output.pathways} ]; then
+            printf 'Sample\n{wildcards.sample}\n' > {output.pathways}
+            echo "KEGGaNOG produced no pathway table; wrote empty pathway fallback." >> {log}
+        fi
+        python workflow/scripts/filter_kegganog_zeros.py data/results/{wildcards.sample}/kegganog/{wildcards.sample}_pathways.tsv >> {log} 2>&1
+        python workflow/scripts/plot_kegganog_bars.py data/results/{wildcards.sample}/kegganog/{wildcards.sample}_pathways_filtered.tsv >> {log} 2>&1
+        """
+
+
+rule genomespot:
+    input:
+        assembly=assembly,
+        proteins="data/results/{sample}/bakta/{sample}.faa"
+    output:
+        predictions="data/results/{sample}/genomespot/{sample}.predictions.tsv"
+    log:
+        "logs/genomespot/genomespot_{sample}.log"
+    params:
+        models=lambda wc: db("genomespot_models")
+    conda:
+        env("genomespot")
+    shell:
+        r"""
+        test -d "{params.models}" || (echo "Missing GenomeSPOT models: {params.models}" >&2; exit 2)
+        mkdir -p data/results/{wildcards.sample}/genomespot
+        py="mamba_envs/genomespot/bin/python"
+        if ! test -x "$py"; then
+            py="$(command -v python || true)"
+        fi
+        test -x "$py" || (echo "Missing GenomeSPOT Python executable" >&2; exit 2)
+        if ! "$py" -c "import genome_spot" >/dev/null 2>&1; then
+            printf '%s\n' 'target	value	error	units' 'oxygen	unavailable		' 'temperature_optimum			C' 'ph_optimum			pH' > {output.predictions}
+            echo "GenomeSPOT Python module is unavailable in this runtime; wrote unavailable placeholder." > {log}
+            exit 0
+        fi
+        if ! "$py" -m genome_spot.genome_spot --models {params.models} \
+            --contigs {input.assembly} \
+            --proteins {input.proteins} \
+            --output data/results/{wildcards.sample}/genomespot/{wildcards.sample} > {log} 2>&1; then
+            printf '%s\n' 'target	value	error	units' 'oxygen	unavailable		' 'temperature_optimum			C' 'ph_optimum			pH' > {output.predictions}
+            echo "GenomeSPOT failed in this runtime; wrote unavailable placeholder." >> {log}
+            exit 0
+        fi
+        test -s {output.predictions} || (echo "Missing GenomeSPOT predictions" >&2; exit 2)
+        """
+
+
+rule gutsmash:
+    input:
+        assembly=assembly
+    output:
+        status="data/results/{sample}/gutsmash/.probeat_gutsmash_status.json"
+    log:
+        "logs/gutsmash/gutsmash_{sample}.log"
+    threads: 16
+    resources:
+        mem_mb=64000
+    params:
+        database=lambda wc: db("gutsmash")
+    shell:
+        r"""
+        wrapper_py="mamba_envs/snakemake-conda-helper-2026-06-04/bin/python"
+        test -x "$wrapper_py" || wrapper_py="$(command -v python3 || command -v python || true)"
+        test -x "$wrapper_py" || (echo "Missing Python executable for gutSMASH wrapper" >&2; exit 2)
+        "$wrapper_py" workflow/scripts/run_gutsmash_wrapper.py \
+            --sample {wildcards.sample} \
+            --input-fasta {input.assembly} \
+            --output-dir data/results/{wildcards.sample}/gutsmash \
+            --database {params.database} \
+            --log {log} \
+            --cpus {threads} \
+            --soft-fail
+        """
+
+
+rule goprobioticprofiler:
+    input:
+        eggnog="data/results/{sample}/eggnog/{sample}.emapper.annotations",
+        pgmdb="data/results/{sample}/pgmdb/hits.tsv",
+        obo="data/databases/go/go-basic.obo",
+        plot_script="workflow/tools/goprobioticprofiler/scripts/plot_goprobioticprofiler.py",
+        cli_script="workflow/tools/goprobioticprofiler/goprobioticprofiler/cli.py",
+        bubble_script="workflow/tools/goprobioticprofiler/goprobioticprofiler/bubble.py",
+        slim_script="workflow/tools/goprobioticprofiler/goprobioticprofiler/slim.py",
+    output:
+        enrichment="data/results/{sample}/goprobioticprofiler/go_enrichment.tsv",
+        slim="data/results/{sample}/goprobioticprofiler/go_slim.tsv",
+        profile="data/results/{sample}/goprobioticprofiler/probiotic_go_profile.tsv",
+        summary="data/results/{sample}/goprobioticprofiler/probiotic_go_summary.json",
+        general_profile="data/results/{sample}/goprobioticprofiler/general_go_profile.tsv",
+        probiotic_terms="data/results/{sample}/goprobioticprofiler/probiotic_go_terms.tsv",
+        probiotic_categories="data/results/{sample}/goprobioticprofiler/probiotic_go_categories.tsv",
+        general_bubble="data/results/{sample}/goprobioticprofiler/general_go_bubble.png",
+        probiotic_bubble="data/results/{sample}/goprobioticprofiler/probiotic_go_bubble.png",
+    log:
+        "logs/goprobioticprofiler/{sample}.log",
+    threads: 4
+    resources:
+        mem_mb=16000
+    conda:
+        env("functional-python")
+    params:
+        outdir="data/results/{sample}/goprobioticprofiler",
+    shell:
+        r"""
+        test -f {input.obo} || (echo "Missing GO OBO file: {input.obo}" >&2; exit 2)
+        mkdir -p {params.outdir}
+        root="${{PROBEAT_ROOT:-$PWD}}"
+        py="$root/mamba_envs/functional-python/bin/python"
+        if ! test -x "$py"; then
+            py="$root/mamba_envs/goprobioticprofiler/bin/python"
+        fi
+        if ! test -x "$py"; then
+            py="$(command -v python || true)"
+        fi
+        test -x "$py" || (echo "Missing GOProbioticProfiler Python executable" >&2; exit 2)
+        export PYTHONPATH="$root/workflow/tools/goprobioticprofiler:${{PYTHONPATH:-}}"
+        PYTHONPATH="$root/workflow/tools/goprobioticprofiler" "$py" -m goprobioticprofiler \
+            --eggnog {input.eggnog} \
+            --pgmdb {input.pgmdb} \
+            --obo {input.obo} \
+            --outdir {params.outdir} \
+            --verbose > {log} 2>&1
+        export MPLCONFIGDIR="$root/.cache/matplotlib"
+        PYTHONPATH="$root/workflow/tools/goprobioticprofiler" "$py" "$root/workflow/tools/goprobioticprofiler/scripts/plot_goprobioticprofiler.py" {params.outdir} {input.obo} >> {log} 2>&1
+        test -s {output.general_bubble}
+        test -s {output.probiotic_bubble}
+        """
+
+
+rule fastmlst:
+    input:
+        assembly=assembly
+    output:
+        mlst="data/results/{sample}/fastmlst/{sample}_mlst.tsv"
+    log:
+        "logs/fastmlst/fastmlst_{sample}.log"
+    threads: 4
+    resources:
+        mem_mb=8000
+    shell:
+        r"""
+        mkdir -p data/results/{wildcards.sample}/fastmlst
+        export PATH="$PWD/mamba_envs/fastmlst/bin:$PATH"
+        export HOME="$PWD/.home"
+        mkdir -p "$HOME/.cache/fastmlst"
+        rm -rf "$HOME/.cache/fastmlst/pubmlst"
+        ln -s "$PWD/data/databases/fastmlst/pubmlst" "$HOME/.cache/fastmlst/pubmlst"
+        mamba_envs/fastmlst/bin/fastmlst --db_path data/databases/fastmlst/pubmlst -t {threads} -s '\t' {input.assembly} > {output.mlst} 2>> {log}
+        grep -q '[^[:space:]]' {output.mlst} || printf 'Genome\tScheme\tST\n' > {output.mlst}
+        """
+
+
+rule fastani_references:
+    input:
+        sourmash_gather="data/results/{sample}/sourmash/gather.with-lineages.csv",
+        script="workflow/scripts/fastani_pipeline.py"
+    output:
+        ready=temp("data/results/{sample}/fastani/refs/references.ready"),
+        references="data/results/{sample}/fastani/refs/references.tsv"
+    log:
+        "logs/fastani/fastani_references_{sample}.log"
+    resources:
+        mem_mb=4000
+    conda:
+        env("fastani")
+    params:
+        reference_genomes=lambda wc: int(config["params"].get("fastani_reference_genomes", 15))
+    shell:
+        r"""
+        root="${{PROBEAT_ROOT:-$PWD}}"
+        mkdir -p data/results/{wildcards.sample}/fastani
+        export PATH="$root/mamba_envs/fastani/bin:$PATH"
+        py="$root/mamba_envs/fastani/bin/python"
+        if ! test -x "$py"; then
+            py="$(command -v python || true)"
+        fi
+        test -x "$py" || (echo "Missing Python for FastANI reference downloader" >&2; exit 2)
+        "$py" {input.script} download \
+            {input.sourmash_gather} data/results/{wildcards.sample}/fastani/refs \
+            {output.ready} {params.reference_genomes} > {log} 2>&1
+        test -s {output.ready}
+        test -s {output.references}
+        """
+
+
+rule fastani:
+    input:
+        assembly=assembly,
+        references_ready="data/results/{sample}/fastani/refs/references.ready",
+        references="data/results/{sample}/fastani/refs/references.tsv",
+        script="workflow/scripts/fastani_pipeline.py"
+    output:
+        heatmap="data/results/{sample}/fastani/{sample}_ani_heatmap.png",
+        ani_tsv="data/results/{sample}/fastani/{sample}_fastani.tsv"
+    log:
+        "logs/fastani/fastani_{sample}.log"
+    threads: 4
+    resources:
+        mem_mb=16000
+    params:
+        reference_genomes=lambda wc: int(config["params"].get("fastani_reference_genomes", 15))
+    conda:
+        env("fastani")
+    shell:
+        r"""
+        root="${{PROBEAT_ROOT:-$PWD}}"
+        mkdir -p data/results/{wildcards.sample}/fastani
+        export PATH="$root/mamba_envs/fastani/bin:$PATH"
+        export LD_LIBRARY_PATH="$root/mamba_envs/fastani/lib:${{LD_LIBRARY_PATH:-}}"
+        fastani_bin="$root/mamba_envs/fastani/bin/fastani"
+        if ! test -x "$fastani_bin"; then
+            fastani_bin="$(command -v fastani || true)"
+        fi
+        if ! test -x "$fastani_bin"; then
+            fastani_bin="$(command -v fastANI || true)"
+        fi
+        test -x "$fastani_bin" || (echo "Missing FastANI executable" >&2; exit 2)
+        export FASTANI_BIN="$fastani_bin"
+        export MPLCONFIGDIR="$root/.cache/matplotlib"
+        py="$root/mamba_envs/fastani/bin/python"
+        if ! test -x "$py"; then
+            py="$(command -v python || true)"
+        fi
+        test -x "$py" || (echo "Missing Python for FastANI runner" >&2; exit 2)
+        "$py" {input.script} run \
+            {input.assembly} {wildcards.sample} \
+            data/results/{wildcards.sample}/fastani/refs \
+            {output.ani_tsv} {output.heatmap} {params.reference_genomes} >> {log} 2>&1
+        test -s {output.heatmap}
+        test -s {output.ani_tsv}
         """
 
 
@@ -414,19 +1718,33 @@ rule multiqc:
     threads: 2
     resources:
         mem_mb=8000
-    container:
-        container("multiqc")
+    conda:
+        env("multiqc")
     shell:
-        "multiqc data/results logs --outdir data/results/multiqc --filename multiqc_report.html > {log} 2>&1"
+        "multiqc data/results logs --outdir data/results/multiqc --filename multiqc_report.html --force > {log} 2>&1"
 
 
 rule final_report:
     input:
-        multiqc="data/results/multiqc/multiqc_report.html"
+        analysis=lambda wc: sample_analysis_targets(wc.sample),
+        script="workflow/scripts/render_report.py",
+        workflow_graph="data/workflow_grouped.png"
     output:
-        html="reports/bacterial_genome_report.html",
-        pdf="reports/bacterial_genome_report.pdf"
+        html="data/results/{sample}/report/{sample}_report.html",
+        pdf="data/results/{sample}/report/{sample}_report.pdf"
     log:
-        "logs/report/final_report.log"
+        "logs/report/final_report_{sample}.log"
     shell:
-        "/home/vebaev/codex/mamba_envs/snakemake-helper-2026-06-04/bin/python workflow/scripts/render_report.py workflow/config/config.yaml {config[samples_file]} {output.html} {output.pdf} > {log} 2>&1"
+        r"""
+        ts=$(date +%Y%m%d_%H%M%S)
+        {PYTHON} \
+            workflow/scripts/tree_results.py {wildcards.sample} data/results/{wildcards.sample}/tree.txt
+        {PYTHON} \
+            workflow/scripts/render_report.py workflow/config/config.yaml {config[samples_file]} \
+            {output.html} {output.pdf} {wildcards.sample} > {log} 2>&1
+        cp {output.html} data/results/{wildcards.sample}/report/{wildcards.sample}_report_$ts.html
+        cp {output.pdf} data/results/{wildcards.sample}/report/{wildcards.sample}_report_$ts.pdf
+        chmod 644 {output.html} {output.pdf} \
+            data/results/{wildcards.sample}/report/{wildcards.sample}_report_$ts.html \
+            data/results/{wildcards.sample}/report/{wildcards.sample}_report_$ts.pdf
+        """

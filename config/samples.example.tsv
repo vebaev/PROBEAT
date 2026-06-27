@@ -1,0 +1,4 @@
+sample	layout	r1	r2
+example_pe	PE	/data/uploads/example_pe_R1.fastq.gz	/data/uploads/example_pe_R2.fastq.gz
+example_se	SE	/data/uploads/example_se.fastq.gz	-
+example_ont	ONT	/data/uploads/example_ont.fastq.gz	-

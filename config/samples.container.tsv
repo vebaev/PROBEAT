@@ -1,0 +1,3 @@
+sample	layout	r1	r2
+container_smoke_pe	PE	tests/data/smoke_R1.fastq	tests/data/smoke_R2.fastq
+container_smoke_ont	ONT	tests/data/smoke.fastq	-

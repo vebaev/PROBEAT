@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+helper_python="${PROBEAT_HELPER_ENV:-$root/mamba_envs/snakemake-conda-helper-2026-06-04}/bin/python"
+
+if [[ -x "$helper_python" ]]; then
+    export PATH="$(dirname "$helper_python"):$PATH"
+    exec "$helper_python" "$root/workflow/probeat_cli.py" "$@"
+fi
+exec python3 "$root/workflow/probeat_cli.py" "$@"

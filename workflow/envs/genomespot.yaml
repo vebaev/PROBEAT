@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - git+https://github.com/cultivarium/GenomeSPOT.git
+    - scikit-learn==1.2.2
+    - hmmlearn==0.3.0
+    - biopython>=1.83
+    - numpy>=1.23.5,<2
+    - pandas>=1.5.3

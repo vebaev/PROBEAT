@@ -1,3 +1,5 @@
-sample	layout	r1	r2
-example_pe	PE	data/raw/README.md	data/raw/README.md
-example_se	SE	data/raw/README.md	
+sample	layout	r1	r2	long_reads
+example_pe	PE	data/raw/example_R1.fastq.gz	data/raw/example_R2.fastq.gz	-
+example_se	SE	data/raw/example.fastq.gz	-	-
+example_ont	ONT	data/raw/example_ont.fastq.gz	-	-
+example_hybrid	HYBRID	data/raw/example_R1.fastq.gz	data/raw/example_R2.fastq.gz	data/raw/example_ont.fastq.gz

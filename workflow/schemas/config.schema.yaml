@@ -1,0 +1,25 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: PROBEAT workflow configuration
+type: object
+required: [paths, samples_file, tools, databases, params]
+properties:
+  analysis_profile:
+    enum: [core, full, probiotic, ont]
+  paths:
+    type: object
+    required: [raw, intermediate, results, logs, databases]
+  samples_file:
+    type: string
+  tools:
+    type: object
+  databases:
+    type: object
+  params:
+    type: object
+    required: [min_contig_length, genetic_code, organism]
+    properties:
+      min_contig_length: {type: integer, minimum: 1}
+      genetic_code: {type: integer, minimum: 1}
+      organism: {type: string, minLength: 1}
+      target_reads_after_fastp: {type: integer, minimum: 1}
+      ont_target_coverage: {type: number, exclusiveMinimum: 0}

@@ -1,0 +1,27 @@
+workflow:
+  name: PROBEAT
+  version: 0.1.0-dev
+  license: MIT
+database_install_targets: [small, mash-refseq, sourmash-gtdb-rs220, ncbi-refseq-species, go-basic, bakta-full, antismash, bagel4, probiotic, genomad, genomespot, gutsmash, eggnog]
+profiles:
+  core:
+    environments: [snakemake-conda-helper, fastp, fastqc, rasusa, unicycler, quast, mash, sourmash, busco, bakta]
+    tools: [snakemake, fastp, fastqc, rasusa, unicycler, quast, mash, sourmash, busco, bakta]
+    databases: [busco-bacteria, bakta-full, mash-refseq, sourmash-gtdb-rs220]
+    database_install_targets: [busco-bacteria, bakta-full, mash-refseq, sourmash-gtdb-rs220]
+  ont:
+    inherits: full
+    environments: [snakemake-conda-helper, porechop, rasusa, flye, medaka, quast, busco, bakta]
+    tools: [snakemake, porechop, rasusa, flye, medaka, quast, busco, bakta]
+    databases: [busco-bacteria, bakta-full]
+    database_install_targets: [busco-bacteria, bakta-full, ont-tools]
+  probiotic:
+    environments: [snakemake-conda-helper, fastp, fastqc, rasusa, unicycler, quast, mash, sourmash, busco, bakta, abricate, amrfinderplus, antismash, dbcan, eggnog, genomad, genomespot, gutsmash, functional-python, kofamscan, mobsuite, fastani]
+    tools: [snakemake, fastp, fastqc, rasusa, unicycler, quast, mash, sourmash, busco, bakta, abricate, amrfinderplus, antismash, bagel4, dbcan, eggnog, fastani, genomad, genomespot, goprobioticprofiler, gutsmash, kegganog, keggdecoder, kofamscan, mobsuite]
+    databases: [busco-bacteria, bakta-full, mash-refseq, sourmash-gtdb-rs220, amrfinderplus, abricate, antismash, bagel4, dbcan, eggnog, genomad, genomespot, go, gutsmash, kofam, mobsuite, ncbi-refseq-species, pgmdb, gut-brain]
+    database_install_targets: [small, mash-refseq, sourmash-gtdb-rs220, ncbi-refseq-species, go-basic, bakta-full, antismash, bagel4, probiotic, genomad, genomespot, gutsmash, eggnog]
+  full:
+    environments: [snakemake-conda-helper, fastp, fastqc, porechop, rasusa, unicycler, flye, medaka, quast, mash, sourmash, busco, bakta, abricate, amrfinderplus, antismash, dbcan, eggnog, genomad, genomespot, gutsmash, functional-python, kofamscan, mobsuite, fastani]
+    tools: [snakemake, fastp, fastqc, porechop, rasusa, unicycler, flye, medaka, quast, mash, sourmash, busco, bakta, abricate, amrfinderplus, antismash, bagel4, dbcan, eggnog, fastani, genomad, genomespot, goprobioticprofiler, gutsmash, kegganog, keggdecoder, kofamscan, mobsuite]
+    databases: [busco-bacteria, bakta-full, mash-refseq, sourmash-gtdb-rs220, amrfinderplus, abricate, antismash, bagel4, dbcan, eggnog, genomad, genomespot, go, gutsmash, kofam, mobsuite, ncbi-refseq-species, pgmdb, gut-brain]
+    database_install_targets: [small, mash-refseq, sourmash-gtdb-rs220, ncbi-refseq-species, go-basic, bakta-full, antismash, bagel4, probiotic, genomad, genomespot, gutsmash, eggnog]
