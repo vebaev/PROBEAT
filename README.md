@@ -24,6 +24,10 @@ HYBRID analyses.
   <img src="data/screen_dashboard.png" alt="PROBEAT dashboard screen" width="780">
 </p>
 
+<p align="center">
+  <a href="docs/examples/SRR30409709_sample_booklet_report.pdf"><strong>VIEW SAMPLE PDF BOOKLET REPORT</strong></a>
+</p>
+
 ## Workflow Programs
 
 PROBEAT combines FastQC, fastp, Rasusa, Unicycler, Flye, Medaka, QUAST, Mash,
