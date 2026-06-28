@@ -25,7 +25,7 @@ HYBRID analyses.
 </p>
 
 <p align="center">
-  <a href="docs/examples/SRR30409709_sample_booklet_report.pdf"><strong>VIEW SAMPLE PDF BOOKLET REPORT</strong></a>
+  ✨📘 <a href="https://github.com/vebaev/PROBEAT/blob/master/docs/examples/SRR30409709_sample_booklet_report.pdf"><strong>VIEW SAMPLE PDF BOOKLET REPORT</strong></a>✨
 </p>
 
 ## Workflow Programs
