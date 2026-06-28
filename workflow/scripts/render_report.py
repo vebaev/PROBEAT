@@ -1554,7 +1554,7 @@ def write_pdf(path, title, summaries, now):
         if busco.get("status") == "done":
             busco_lines = [
                 f"BUSCO: Complete {busco.get('complete', 'NA')}%; single-copy {busco.get('single', 'NA')}%",
-                f"BUSCO duplicated: {duplicated or 'NA'}%{pdf_problem_suffix(summary, 'BUSCO duplicated')}; "
+                f"BUSCO duplicated: {duplicated or 'NA'}%; "
                 f"fragmented {busco.get('fragmented', 'NA')}%; missing {busco.get('missing', 'NA')}%",
             ]
         else:
@@ -1569,11 +1569,11 @@ def write_pdf(path, title, summaries, now):
         lines = [
             (f"Sample {summary['sample']} ({summary['layout']})", 0),
             (f"Raw reads/bases: {fmt_int(fastp.get('raw_reads'))} / {fmt_int(fastp.get('raw_bases'))}", 0),
-            (f"After adapter/QC reads/bases: {fmt_int(fastp.get('filtered_reads'))} / {fmt_int(fastp.get('filtered_bases'))}; Q30 {fmt_percent(fastp.get('filtered_q30'))}{pdf_problem_suffix(summary, 'Q30 after QC')}", 0),
+            (f"After adapter/QC reads/bases: {fmt_int(fastp.get('filtered_reads'))} / {fmt_int(fastp.get('filtered_bases'))}; Q30 {fmt_percent(fastp.get('filtered_q30'))}", 0),
             (f"Adapter-trimmed reads/bases: {fmt_int(fastp.get('adapter_trimmed_reads'))} / {fmt_int(fastp.get('adapter_trimmed_bases'))}", 0),
             (f"Rasusa: {rasusa.get('status', 'not run')}; {fmt_int(rasusa.get('input_reads'))} -> {fmt_int(rasusa.get('output_reads'))} reads", 0),
-            (f"Coverage: {summary['qc_assessment'][1][2]}{pdf_problem_suffix(summary, 'Estimated coverage')}", 0),
-            (f"Assembly: {fmt_int(quast.get('contigs'))} contigs{pdf_problem_suffix(summary, 'Contigs')}; {fmt_int(quast.get('total_length'))} bp{pdf_problem_suffix(summary, 'Genome size vs reference')}; GC {fmt_percent(quast.get('gc'))}{pdf_problem_suffix(summary, 'GC vs reference')}; N50 {fmt_int(quast.get('n50'))}{pdf_problem_suffix(summary, 'N50')}", 0),
+            (f"Coverage: {summary['qc_assessment'][1][2]}", 0),
+            (f"Assembly: {fmt_int(quast.get('contigs'))} contigs; {fmt_int(quast.get('total_length'))} bp; GC {fmt_percent(quast.get('gc'))}; N50 {fmt_int(quast.get('n50'))}", 0),
             (f"Taxonomy: sourmash {sourmash_species[0] if sourmash_species else 'not run'}; Mash {mash.get('species', mash.get('status', 'not run'))}", 0),
             (f"FastANI: {extra.get('fastani', 'not run')}", 0),
             (f"Bakta: CDS {fmt_int(bakta.get('CDS'))}; tRNA {fmt_int(bakta.get('tRNA'))}; rRNA {fmt_int(bakta.get('rRNA'))}; tmRNA {fmt_int(bakta.get('tmRNA'))}; CRISPR {fmt_int(bakta.get('CRISPR'))}", 0),
