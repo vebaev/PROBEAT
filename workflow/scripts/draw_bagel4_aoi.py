@@ -6,6 +6,8 @@ from pathlib import Path
 
 
 bakta_tsv, clusters_tsv, output_dir = map(Path, sys.argv[1:4])
+assembly_fasta = Path(sys.argv[4]) if len(sys.argv) > 4 else None
+bakta_fasta = Path(sys.argv[5]) if len(sys.argv) > 5 else None
 output_dir.mkdir(parents=True, exist_ok=True)
 
 
@@ -22,6 +24,55 @@ def color(product):
     if any(word in text for word in ("immunity", "resistance")):
         return "#f28cb1"
     return "#93b8b8" if product and "hypothetical" not in text else "#d8dee5"
+
+
+def parse_int(value):
+    try:
+        return int(float(str(value).strip()))
+    except (TypeError, ValueError):
+        return None
+
+
+def overlaps(left_start, left_end, right_start, right_end):
+    return left_start is not None and left_end is not None and right_start is not None and right_end is not None and left_end >= right_start and left_start <= right_end
+
+
+def fasta_lengths(path):
+    if not path or not path.exists():
+        return {}
+    lengths = {}
+    name = None
+    size = 0
+    with path.open(errors="replace") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                if name is not None:
+                    lengths[name] = size
+                name = line[1:].split()[0]
+                size = 0
+            else:
+                size += len(line)
+    if name is not None:
+        lengths[name] = size
+    return lengths
+
+
+def contig_aliases(assembly_lengths, bakta_lengths):
+    aliases = {}
+    bakta_by_length = {}
+    for name, size in bakta_lengths.items():
+        bakta_by_length.setdefault(size, []).append(name)
+    for name, size in assembly_lengths.items():
+        matches = bakta_by_length.get(size, [])
+        if len(matches) == 1 and matches[0] != name:
+            aliases[name] = matches[0]
+    return aliases
+
+
+assembly_to_bakta = contig_aliases(fasta_lengths(assembly_fasta), fasta_lengths(bakta_fasta))
 
 
 features = []
@@ -49,9 +100,27 @@ for cluster in clusters:
     aoi = cluster["AOI"]
     contig = aoi.split(".AOI_")[0] if ".AOI_" in aoi else aoi.split(".")[0]
     start, end = int(cluster["start"]), int(cluster["end"])
+    hit_start = parse_int(cluster.get("hit_start"))
+    hit_end = parse_int(cluster.get("hit_end"))
+    if hit_start is not None and hit_end is not None and hit_start > hit_end:
+        hit_start, hit_end = hit_end, hit_start
     stripped_contig = contig[len("contig_"):] if contig.startswith("contig_") else contig
-    contig_features = by_contig.get(contig) or by_contig.get(stripped_contig) or []
-    genes = [row for row in contig_features if row["type"].lower() == "cds" and row["end"] >= start and row["start"] <= end]
+    mapped_contig = assembly_to_bakta.get(contig, contig)
+    stripped_mapped = mapped_contig[len("contig_"):] if mapped_contig.startswith("contig_") else mapped_contig
+    candidate_contigs = [contig, stripped_contig, mapped_contig, stripped_mapped]
+    genes = []
+    seen = set()
+    for candidate in candidate_contigs:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        contig_features = by_contig.get(candidate) or []
+        genes = [
+            row for row in contig_features
+            if row["type"].lower() == "cds" and row["end"] >= start and row["start"] <= end
+        ]
+        if genes:
+            break
     if not genes:
         genes = [
             {"contig": contig, "type": "cds", "start": start, "end": end, "strand": "+",
@@ -78,7 +147,8 @@ for cluster in clusters:
             points = f"{x1},{baseline-18} {x2-arrow},{baseline-18} {x2},{baseline} {x2-arrow},{baseline+18} {x1},{baseline+18}"
         label = gene["gene"] or gene["locus"] or f"orf{index+1:04d}"
         product = gene["product"] or "No function determined"
-        parts.append(f"<polygon points='{points}' fill='{color(product)}' stroke='#37474f' stroke-width='1'/>")
+        fill = "#57b957" if overlaps(gene["start"], gene["end"], hit_start, hit_end) else color(product)
+        parts.append(f"<polygon points='{points}' fill='{fill}' stroke='#37474f' stroke-width='1'/>")
         tx = (x1 + x2) / 2
         parts.append(f"<text x='{tx:.1f}' y='{baseline-27}' transform='rotate(-55 {tx:.1f},{baseline-27})' font-family='Arial' font-size='10'>{html.escape(label)}</text>")
     if len(genes) == 1 and genes[0]["start"] == start and genes[0]["end"] == end:

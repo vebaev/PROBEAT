@@ -20,7 +20,7 @@ for bacteriocin_class, database in databases:
         "-outfmt", "6 qseqid sseqid pident length qlen qstart qend sstart send evalue bitscore",
         "-evalue", "1e-5", "-max_target_seqs", "1", "-num_threads", "4",
     ]
-    result = subprocess.run(command, check=True, capture_output=True, text=True)
+    result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     for line in result.stdout.splitlines():
         fields = line.split("\t")
         if len(fields) != 11:
@@ -52,7 +52,10 @@ for hit in hits:
             "hits": [hit],
         })
 
-fields = ["AOI", "start", "end", "class", "fullname", "identity", "coverage", "evalue", "source"]
+fields = [
+    "AOI", "start", "end", "class", "fullname", "identity", "coverage", "evalue",
+    "hit_start", "hit_end", "source",
+]
 with output.open("w", newline="") as handle:
     writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t")
     writer.writeheader()
@@ -67,5 +70,7 @@ with output.open("w", newline="") as handle:
             "identity": f"{best['identity']:.2f}",
             "coverage": f"{best['coverage']:.2f}",
             "evalue": best["evalue"],
+            "hit_start": best["start"],
+            "hit_end": best["end"],
             "source": "BAGEL4 tblastn fallback",
         })

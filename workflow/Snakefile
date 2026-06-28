@@ -1115,6 +1115,7 @@ rule bagel4:
     input:
         assembly=assembly,
         bakta="data/results/{sample}/bakta/{sample}.tsv",
+        bakta_fna="data/results/{sample}/bakta/{sample}.fna",
         script="workflow/scripts/summarize_bagel4.py",
         fallback_script="workflow/scripts/bagel4_tblastn_fallback.py",
         draw_script="workflow/scripts/draw_bagel4_aoi.py"
@@ -1189,7 +1190,7 @@ rule bagel4:
         fi
         mkdir -p data/results/{wildcards.sample}/bagel4/graphics
         {PYTHON} \
-            {input.draw_script} {input.bakta} {output.summary} data/results/{wildcards.sample}/bagel4/graphics
+            {input.draw_script} {input.bakta} {output.summary} data/results/{wildcards.sample}/bagel4/graphics {input.assembly} {input.bakta_fna}
         for svg in data/results/{wildcards.sample}/bagel4/graphics/*.svg; do
             [ -e "$svg" ] || continue
             rsvg="$(dirname {PYTHON})/rsvg-convert"
