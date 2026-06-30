@@ -43,7 +43,7 @@ and final HTML/PDF reports.
 - Docker Engine with Docker Compose (`docker-compose`)
 - Internet access for the first image build and database download
 - Sufficient disk space for the full image, workflow outputs, and downloaded
-  biological databases (the workflow requires about 200 GB of disk space)
+  biological databases (the workflow and databases require about 200 GB of disk space)
 - Linux server or workstation recommended for production runs
 
 The databases are not stored in Git and are not baked into the image. They are
