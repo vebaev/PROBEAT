@@ -185,3 +185,35 @@ See [LICENSE](LICENSE).
 ## Citation
 
 See [CITATION.cff](CITATION.cff).
+
+## Workflow Tool Sources
+
+| Workflow Tool | Purpose | Output | Source Repository |
+| --- | --- | --- | --- |
+| fastp 1.3.3 | Read trimming | FASTQ QC | https://github.com/OpenGene/fastp |
+| Porechop 0.2.4 | Adapter removal | Trimmed FASTQ | https://github.com/rrwick/Porechop |
+| Rasusa 2.1.0 | Coverage normalization | Subsampled FASTQ | https://github.com/mbhall88/rasusa |
+| Unicycler 0.5.1 | Short/hybrid assembly | Assembly FASTA | https://github.com/rrwick/Unicycler |
+| Flye 2.9.6 | ONT assembly | Assembly FASTA | https://github.com/mikolmogorov/Flye |
+| Medaka 2.x | Consensus polishing | Polished FASTA | https://github.com/nanoporetech/medaka |
+| QUAST 5.3.0 | Assembly statistics | Quality table | https://github.com/ablab/quast |
+| BUSCO 6.0.0 | Completeness assessment | BUSCO summary | https://gitlab.com/ezlab/busco |
+| Mash 2.3; sourmash 4.9 | Reference matching | Top-hit tables | https://github.com/marbl/Mash; https://github.com/sourmash-bio/sourmash |
+| FastANI 1.34 | ANI comparison | ANI table/heatmap | https://github.com/ParBLiSS/FastANI |
+| Bakta 1.12.0 | Feature annotation | GFF3/FAA/TSV | https://github.com/oschwengers/bakta |
+| eggNOG-mapper 2.1.x | Function assignment | Annotation table | https://github.com/eggnogdb/eggnog-mapper |
+| KOfamScan 1.3.0 | KO assignment | KO table | https://github.com/takaram/kofam_scan |
+| KEGGDecoder 1.3 | Pathway completeness | Table/SVG | https://github.com/bjtully/BioData/tree/master/KEGGDecoder |
+| dbCAN 5.2.9 | Carbohydrate profiling | CAZyme/CGC tables | https://github.com/bcb-unl/run_dbcan |
+| AMRFinderPlus 4.2.7 | Resistance detection | AMR table | https://github.com/ncbi/amr |
+| ABRicate 1.0.1 | Gene screening | Hit tables | https://github.com/tseemann/abricate |
+| MOB-suite 3.1.9 | Plasmid classification | Contig report | https://github.com/phac-nml/mob-suite |
+| geNomad 1.x | MGE detection | Plasmid/virus tables | https://github.com/apcamargo/genomad |
+| BAGEL4 | Bacteriocin detection | Cluster table | https://github.com/vanheel/BAGEL4 |
+| antiSMASH 8.0.4 | BGC detection | Region table | https://github.com/antismash/antismash |
+| gutSMASH | Cluster detection | Region table | https://github.com/victoriapascal/gutsmash |
+| GenomeSPOT | Condition prediction | Prediction table | https://github.com/cultivarium/GenomeSPOT |
+| PGMDB | Marker detection | Marker summary hits | https://github.com/vebaev/PROBEAT |
+| GOProbiotic 1.0.0 | Functional profiling | GO tables/plots | https://github.com/vebaev/PROBEAT |
+| pyCirclize | Circular mapping | PNG/SVG map | https://github.com/moshi4/pyCirclize |
+| MultiQC 1.35 | Report aggregation | HTML report | https://github.com/MultiQC/MultiQC |
