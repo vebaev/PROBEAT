@@ -184,7 +184,7 @@ See [LICENSE](LICENSE).
 
 ## Citation
 
-Baev V. PROBEAT: PRObiotic Bacterial gEnome Analysis Toolkit. Current Issues in Molecular Biology. 2026; 48(8):811.    https://doi.org/10.3390/cimb48080811
+Baev, V. PROBEAT: PRObiotic Bacterial gEnome Analysis Toolkit. Curr. Issues Mol. Biol. 2026, 48, 811. https://doi.org/10.3390/cimb48080811
 
 ## Workflow Tool Sources
 
