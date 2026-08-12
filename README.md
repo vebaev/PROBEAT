@@ -180,7 +180,7 @@ storage/logs/
 
 ## License
 
-See [LICENSE](LICENSE).
+(CC BY-NC-SA 4.0) [LICENSE](LICENSE).
 
 ## Citation
 
