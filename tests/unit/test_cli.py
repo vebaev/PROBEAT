@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
@@ -32,6 +33,24 @@ class CliTests(unittest.TestCase):
     def test_manifests_have_no_local_workspace_path(self):
         for path in (ROOT / "manifests").glob("*.yaml"):
             self.assertNotIn("/home/vebaev/codex", path.read_text(encoding="utf-8"))
+
+    def test_goprobioticprofiler_runtime_sources_are_versioned(self):
+        required = {
+            "workflow/tools/goprobioticprofiler/goprobioticprofiler/cli.py",
+            "workflow/tools/goprobioticprofiler/goprobioticprofiler/bubble.py",
+            "workflow/tools/goprobioticprofiler/goprobioticprofiler/slim.py",
+            "workflow/tools/goprobioticprofiler/scripts/plot_goprobioticprofiler.py",
+        }
+        tracked = set(
+            subprocess.run(
+                ["git", "ls-files", "workflow/tools/goprobioticprofiler"],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.splitlines()
+        )
+        self.assertTrue(required <= tracked, f"Unversioned runtime sources: {sorted(required - tracked)}")
 
 
 if __name__ == "__main__":

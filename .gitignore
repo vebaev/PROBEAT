@@ -39,6 +39,15 @@ micromamba-root/
 snakemake_conda_envs/
 tools/
 .tools/
+!workflow/tools/
+!workflow/tools/goprobioticprofiler/
+!workflow/tools/goprobioticprofiler/README.md
+!workflow/tools/goprobioticprofiler/environment.yml
+!workflow/tools/goprobioticprofiler/setup.py
+!workflow/tools/goprobioticprofiler/goprobioticprofiler/
+!workflow/tools/goprobioticprofiler/goprobioticprofiler/*.py
+!workflow/tools/goprobioticprofiler/scripts/
+!workflow/tools/goprobioticprofiler/scripts/*.py
 .docker/
 storage/
 backups/
@@ -46,6 +55,7 @@ backups/
 # Python/editor noise.
 __pycache__/
 *.py[cod]
+*.egg-info/
 .DS_Store
 tmp/
 workflow/data/

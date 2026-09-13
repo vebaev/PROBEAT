@@ -37,6 +37,15 @@ micromamba-root
 snakemake_conda_envs
 storage
 tools
+!workflow/tools
+!workflow/tools/goprobioticprofiler
+!workflow/tools/goprobioticprofiler/README.md
+!workflow/tools/goprobioticprofiler/environment.yml
+!workflow/tools/goprobioticprofiler/setup.py
+!workflow/tools/goprobioticprofiler/goprobioticprofiler
+!workflow/tools/goprobioticprofiler/goprobioticprofiler/*.py
+!workflow/tools/goprobioticprofiler/scripts
+!workflow/tools/goprobioticprofiler/scripts/*.py
 workflow/data
 workflow/gutsmash_src
 workflow/__pycache__

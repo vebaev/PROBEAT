@@ -1,0 +1,17 @@
+name: goprobioticprofiler
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python>=3.11
+  - pip
+  - pandas>=2.0
+  - numpy>=1.24
+  - scipy>=1.10
+  - statsmodels>=0.14
+  - matplotlib>=3.7
+  - plotly>=5.15
+  - pip:
+    - goatools>=1.4.0
+    - pyyaml>=6.0
