@@ -101,6 +101,9 @@ def profile_config(name: str) -> dict[str, Any]:
     return parent
 
 
+GENERIC_EXECUTABLES = {"python", "python3", "perl", "bash", "sh", "java", "Rscript"}
+
+
 def tool_path(tool: dict[str, Any]) -> str | None:
     candidates = tool.get("candidates", [])
     executable = tool.get("executable", tool["name"])
@@ -108,6 +111,9 @@ def tool_path(tool: dict[str, Any]) -> str | None:
         path = ROOT / candidate
         if path.is_file() and os.access(path, os.X_OK):
             return str(path)
+    if candidates and executable in GENERIC_EXECUTABLES:
+        # An interpreter from any other env would match; only the declared env is this tool.
+        return None
     direct = ROOT / "mamba_envs" / tool["name"] / "bin" / executable
     if direct.is_file() and os.access(direct, os.X_OK):
         return str(direct)
@@ -320,8 +326,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     for name in profile.get("tools", []):
         item = tools[name]
         path = tool_path(item)
-        print(f"{'[OK]' if path else '[FAIL]'} tool: {name}{f' ({path})' if path else ''}")
-        failures += int(path is None)
+        details: list[str] = []
+        ok = path is not None
         if path:
             try:
                 check_env = {
@@ -342,14 +348,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 )
                 version_line = (result.stdout or result.stderr).strip().splitlines()
                 if version_line:
-                    print(f"       version: {version_line[0][:160]}")
+                    details.append(f"version: {version_line[0][:160]}")
                 if result.returncode and "check_args" in item:
-                    print(f"       check failed with exit code {result.returncode}")
-                    failures += 1
+                    details.append(f"check failed with exit code {result.returncode}")
+                    ok = False
             except (OSError, subprocess.TimeoutExpired):
-                print("       version: could not query")
+                details.append("version: could not query")
                 if "check_args" in item:
-                    failures += 1
+                    ok = False
+        print(f"{'[OK]' if ok else '[FAIL]'} tool: {name}{f' ({path})' if path else ''}")
+        for detail in details:
+            print(f"       {detail}")
+        failures += int(not ok)
     for name in profile.get("databases", []):
         item = databases[name]
         valid, _ = database_valid(item)

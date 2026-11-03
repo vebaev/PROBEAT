@@ -8,6 +8,7 @@ dependencies:
   - mamba>=2
   - snakemake>=9.22
   - git
+  - curl
   - pyyaml
   - jsonschema
   - psutil

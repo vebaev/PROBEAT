@@ -49,7 +49,7 @@ tools:
 databases:
   gtdbtk: data/databases/gtdbtk
   bakta: data/databases/bakta_full
-  amrfinderplus: data/databases/amrfinderplus/2026-05-15.1
+  amrfinderplus: data/databases/amrfinderplus/latest
   antismash: data/databases/antismash
   bagel4: data/databases/bagel4
   mobsuite: data/databases/mob_suite
