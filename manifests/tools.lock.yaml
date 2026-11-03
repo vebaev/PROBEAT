@@ -23,7 +23,7 @@ tools:
   - {name: dbcan, version: "5.2.9", executable: run_dbcan, candidates: [mamba_envs/dbcan_v5/bin/run_dbcan], check_args: [version]}
   - {name: eggnog, version: "2.1.15", executable: emapper.py, candidates: [mamba_envs/eggnog/bin/emapper.py], check_args: [--version, --data_dir, data/databases/eggnog]}
   - {name: fastani, version: "1.34", executable: fastani, candidates: [mamba_envs/fastani/bin/fastani, mamba_envs/fastani/bin/fastANI], check_args: [--version], check_env: {LD_LIBRARY_PATH: ./mamba_envs/fastani/lib}}
-  - {name: genomad, version: "1.x", executable: genomad, candidates: [mamba_envs/genomad/bin/genomad]}
+  - {name: genomad, version: "1.12", executable: genomad, candidates: [mamba_envs/genomad/bin/genomad]}
   - {name: genomespot, version: "1.x", executable: python, candidates: [mamba_envs/genomespot/bin/python]}
   - {name: goprobioticprofiler, version: "1.0.0", executable: python, candidates: [mamba_envs/functional-python/bin/python, mamba_envs/goprobioticprofiler/bin/python], check_args: [-m, goprobioticprofiler, --version], check_env: {PYTHONPATH: ./workflow/tools/goprobioticprofiler}}
   - {name: gutsmash, version: 1651919f, executable: python, candidates: [mamba_envs/gutsmash/bin/python]}

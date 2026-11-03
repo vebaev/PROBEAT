@@ -4,18 +4,18 @@ databases:
   - {id: bakta-full, version: "6.0", path: bakta_full, required_files: [version.json], tools: [bakta], approximate_size_gb: 84}
   - {id: mash-refseq, version: defaults, path: mash, required_files: [RefSeqSketchesDefaults.msh], tools: [mash], approximate_size_gb: 0.4}
   - {id: sourmash-gtdb-rs220, version: rs220-k31, path: sourmash, required_files: [gtdb-reps-rs220-k31.dna.zip, gtdb-rs220.lineages.csv], tools: [sourmash], approximate_size_gb: 2.9}
-  - {id: amrfinderplus, version: "2026-05-15.1", path: amrfinderplus, required_files: ["*/version.txt"], tools: [amrfinderplus], approximate_size_gb: 0.3}
+  - {id: amrfinderplus, version: "latest", path: amrfinderplus, required_files: ["*/version.txt"], tools: [amrfinderplus], approximate_size_gb: 0.3}
   - {id: abricate, version: "1.0.1 bundled", path: abricate, required_files: [plasmidfinder/sequences, plasmidfinder/sequences.nin, plasmidfinder/sequences.nsq, vfdb/sequences, vfdb/sequences.nin, vfdb/sequences.nsq], tools: [abricate], approximate_size_gb: 0.01}
   - {id: antismash, version: "8.0.4 compatible", path: antismash, required_files: ["*"], tools: [antismash], approximate_size_gb: 9.4}
   - {id: bagel4, version: dcb961a8, path: bagel4, required_files: [bagel4_wrapper.pl], tools: [bagel4], approximate_size_gb: 0.02}
-  - {id: dbcan, version: "v5", path: dbcan_v5, required_files: ["*"], tools: [dbcan], approximate_size_gb: 7.4}
-  - {id: eggnog, version: "v7", path: eggnog, required_files: ["*"], tools: [eggnog], approximate_size_gb: 59}
-  - {id: genomad, version: current, path: genomad/genomad_db, required_files: ["*"], tools: [genomad], approximate_size_gb: 1.4}
+  - {id: dbcan, version: "v5", path: dbcan_v5, required_files: [CAZy.dmnd, dbCAN.hmm, dbCAN-sub.hmm], tools: [dbcan], approximate_size_gb: 7.4}
+  - {id: eggnog, version: "5.0.2", path: eggnog, required_files: [eggnog.db, eggnog.taxa.db, eggnog_proteins.dmnd], tools: [eggnog], approximate_size_gb: 59}
+  - {id: genomad, version: "1.9", path: genomad/genomad_db, required_files: [version.txt, genomad_db], tools: [genomad], approximate_size_gb: 1.4}
   - {id: genomespot, version: current, path: genomespot, required_files: ["*"], tools: [genomespot], approximate_size_gb: 0.001}
   - {id: go, version: current, path: go, required_files: [go-basic.obo], tools: [goprobioticprofiler], approximate_size_gb: 0.03}
   - {id: gutsmash, version: 1651919f, path: gutsmash, required_files: [ClusterBlast/clusters.txt, ClusterBlast/proteins.fasta, ClusterBlast/proteins.dmnd, KnownClusterBlast/clusters.txt, KnownClusterBlast/proteins.fasta, KnownClusterBlast/proteins.dmnd, pfam/Pfam-A.hmm, resfam/resfam/Resfams.hmm, smcogs/smcogs.hmm], tools: [gutsmash], approximate_size_gb: 3.8}
   - {id: kofam, version: current, path: kofam, required_files: [ko_list, profiles], tools: [kofamscan], approximate_size_gb: 7.2}
-  - {id: mobsuite, version: current, path: mob_suite, required_files: ["*"], tools: [mobsuite], approximate_size_gb: 2.9}
+  - {id: mobsuite, version: current, path: mob_suite, required_files: [status.txt, taxa.sqlite, ncbi_plasmid_full_seqs.fas, clusters.txt], tools: [mobsuite], approximate_size_gb: 2.9}
   - {id: ncbi-refseq-species, version: current, path: ncbi_refseq_species, required_files: [refseq_historical_species_representatives.tsv], tools: [probeat], approximate_size_gb: 0.06}
   - {id: pgmdb, version: "2026-06", path: PGMDB.tab, required_files: [], tools: [probeat], approximate_size_gb: 0.001, curated: true}
   - {id: gut-brain, version: "2026-06", path: gut_brain_axis_marker_database.tsv, required_files: [], tools: [probeat], approximate_size_gb: 0.001, curated: true}

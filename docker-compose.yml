@@ -21,6 +21,7 @@ x-probeat-service: &probeat-service
     - ${PROBEAT_RESULTS_HOST:-./storage/results}:/app/data/results
     - ${PROBEAT_LOGS_HOST:-./storage/logs}:/app/logs
     - ${PROBEAT_STATE_HOST:-./storage/state}:/app/data/state
+    - ${PROBEAT_DOWNLOADS_HOST:-./storage/downloads}:/app/downloads
     - ${PROBEAT_CONDA_ENVS_HOST:-probeat_snakemake_conda_envs}:/app/snakemake_conda_envs
     - ${PROBEAT_CONDA_PKGS_HOST:-probeat_micromamba_pkgs}:/app/micromamba-root/pkgs
 

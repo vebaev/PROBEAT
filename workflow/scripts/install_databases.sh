@@ -129,11 +129,21 @@ install_amrfinderplus() {
 
 install_mobsuite() {
     local cmd
+    local mob_downloads="$downloads/mob_suite"
+    if [[ -s "$db_root/mob_suite/status.txt" && -s "$db_root/mob_suite/taxa.sqlite" ]]; then
+        echo "MOB-suite database already installed at $db_root/mob_suite"
+        return 0
+    fi
     cmd="$(find_env_bin mob_init makeblastdb)"
-    mkdir -p "$db_root/mob_suite"
+    mkdir -p "$db_root/mob_suite" "$mob_downloads"
+    # ete3 fetches taxdump.tar.gz over http:// unless an up-to-date copy is in the
+    # working directory, so pre-seed it over HTTPS and run mob_init from there.
+    run_log mob_suite_taxdump_download curl -L --fail --output "$mob_downloads/taxdump.tar.gz" \
+        https://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
     run_log mob_suite \
-        env PATH="$(dirname "$cmd"):$PATH" "$cmd" \
-        --database_directory "$db_root/mob_suite"
+        env PATH="$(dirname "$cmd"):$PATH" \
+        bash -c 'cd "$1" && exec "$2" --database_directory "$3"' _ \
+        "$mob_downloads" "$cmd" "$db_root/mob_suite"
 }
 
 install_busco_bacteria() {
@@ -357,6 +367,10 @@ install_kofamscan() {
     local ko_list_archive="$kofam_downloads/ko_list.gz"
     mkdir -p "$kofam_dir" "$kofam_downloads"
 
+    if [[ -d "$kofam_dir/profiles" && -s "$kofam_dir/ko_list" ]]; then
+        echo "KOfam database already installed at $kofam_dir"
+        return 0
+    fi
     if [[ ! -s "$profiles_archive" ]]; then
         run_log kofamscan_profiles_download curl -L --fail --continue-at - --output "$profiles_archive" \
             https://www.genome.jp/ftp/db/kofam/profiles.tar.gz
@@ -464,6 +478,10 @@ install_dbcan() {
     if [[ ! -x "$cmd" ]]; then
         cmd="$(find_or_create_env_bin run_dbcan dbcan_v5 dbcan=5.2.9)"
     fi
+    if [[ -s "$db_root/CAZy.dmnd" && -s "$db_root/dbCAN.hmm" && -s "$db_root/dbCAN-sub.hmm" ]]; then
+        echo "dbCAN database already installed at $db_root"
+        return 0
+    fi
     echo "Downloading dbCAN v5 database..."
     mkdir -p "$db_root"
     run_log dbcan_database env PATH="$(dirname "$cmd"):$PATH" "$cmd" database --db_dir "$db_root" --aws_s3
@@ -473,7 +491,19 @@ install_dbcan() {
 install_genomad() {
     local db_root="${DATABASE_ROOT}/genomad"
     local cmd
-    cmd="$(find_or_create_env_bin genomad genomad genomad)"
+    local installed_version=""
+    if [[ -s "$db_root/genomad_db/version.txt" && -s "$db_root/genomad_db/genomad_db" ]]; then
+        installed_version="$(head -n 1 "$db_root/genomad_db/version.txt")"
+        # geNomad 1.12 (workflow/envs/genomad.yaml) reads database v1.8 or newer only;
+        # see https://portal.nersc.gov/genomad/__data__/releases.txt
+        if [[ "$(printf '%s\n' 1.8 "$installed_version" | sort -V | head -n 1)" == "1.8" ]]; then
+            echo "geNomad database v$installed_version already installed at $db_root/genomad_db"
+            return 0
+        fi
+        echo "geNomad database v$installed_version is too old for geNomad 1.12; downloading a new one"
+        rm -rf "$db_root/genomad_db"
+    fi
+    cmd="$(find_or_create_env_bin genomad genomad 'genomad=1.12')"
     mkdir -p "$db_root"
     echo "Downloading geNomad database..."
     run_log genomad \
@@ -524,7 +554,7 @@ install_gutsmash_db() {
     echo "Downloading and preparing gutSMASH Pfam/resfam/ClusterBlast databases..."
     run_log gutsmash_large_databases \
         env PYTHONPATH="$src_dir:${PYTHONPATH:-}" PATH="$(dirname "$py"):$PATH" \
-        "$py" "$src_dir/antismash/download_databases.py" --database-dir "$stage"
+        "$py" "$script_dir/gutsmash_download_databases.py" --database-dir "$stage"
 
     echo "Normalizing gutSMASH database layout..."
     rm -rf "$db_root/.staging"
@@ -618,14 +648,37 @@ install_gutsmash_db() {
     echo "gutSMASH databases installed to $db_root"
 }
 
+eggnog_required_files=(eggnog.db eggnog.taxa.db eggnog_proteins.dmnd)
+
+eggnog_installed() {
+    local file
+    for file in "${eggnog_required_files[@]}"; do
+        [[ -s "$1/$file" ]] || return 1
+    done
+}
+
 install_eggnog() {
     local db_root="${DATABASE_ROOT}/eggnog"
     local cmd
+    local file
+    if eggnog_installed "$db_root"; then
+        echo "eggNOG database already installed at $db_root"
+        return 0
+    fi
     cmd="$(find_or_create_env_bin download_eggnog_data.py eggnog eggnog-mapper=2.1.15)"
     mkdir -p "$db_root"
-    echo "Downloading eggNOG v7 database..."
+    echo "Downloading eggNOG database..."
+    # -y answers the interactive prompts; download_eggnog_data.py can exit 0 after
+    # failed downloads, so the files are checked explicitly afterwards.
     run_log eggnog \
-        env PATH="$(dirname "$cmd"):$PATH" "$cmd" --data_dir "$db_root"
+        env PATH="$(dirname "$cmd"):$PATH" "$cmd" -y --data_dir "$db_root" </dev/null || true
+    if ! eggnog_installed "$db_root"; then
+        for file in "${eggnog_required_files[@]}"; do
+            [[ -s "$db_root/$file" ]] || echo "Missing eggNOG file: $db_root/$file" >&2
+        done
+        echo "eggNOG download failed; see logs/databases/eggnog.log and docs/databases.md for the manual install." >&2
+        exit 2
+    fi
     echo "eggNOG database installed to $db_root"
 }
 
@@ -660,7 +713,7 @@ Targets:
   bagel4         BAGEL4 bacteriocin/RiPP mining tool and bundled databases
   dbcan          dbCAN CAZyme database without CGC/PUL data
   genomad        geNomad plasmid and virus identification database
-  eggnog         eggNOG v7 functional annotation database
+  eggnog         eggNOG-mapper functional annotation database
   genomespot     GenomeSPOT growth condition prediction models
   gutsmash       gutSMASH metabolic gene cluster database
   probiotic      plasmidfinder, vfdb, kofamscan, dbcan
@@ -677,6 +730,20 @@ USAGE
 if [[ $# -eq 0 ]]; then
     usage
     exit 2
+fi
+
+# With several targets, install each in its own process so one failure (for
+# example eggNOG) does not stop the targets after it; report failures at the end.
+if [[ $# -gt 1 ]]; then
+    failed=()
+    for target in "$@"; do
+        bash "${BASH_SOURCE[0]}" "$target" || failed+=("$target")
+    done
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        echo "Failed database targets: ${failed[*]}" >&2
+        exit 1
+    fi
+    exit 0
 fi
 
 for target in "$@"; do

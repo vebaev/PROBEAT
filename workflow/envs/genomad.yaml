@@ -2,6 +2,6 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - genomad
+  - genomad=1.12
   - mmseqs2
   - aragorn
